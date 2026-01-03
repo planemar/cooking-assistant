@@ -1,7 +1,7 @@
 {
   "name": "ai-chatbot-learning",
   "version": "1.0.0",
-  "description": "Educational AI chatbot with RAG using Gemini embeddings and Claude Opus 4.5",
+  "description": "Educational AI chatbot with RAG using Gemini embeddings and AgentRouter",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
