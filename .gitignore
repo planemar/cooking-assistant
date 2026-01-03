@@ -50,6 +50,9 @@ coverage/
 *.temp
 .cache/
 
+# ChromaDB
+chroma_db/
+
 # OS generated files
 Thumbs.db
 .DS_Store
