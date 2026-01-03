@@ -1,5 +1,6 @@
-import { GoogleGenerativeAI, GenerativeModel } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { EmbeddingService } from './embedding.interface';
+import { logger } from '../../utils/logger';
 
 export interface GeminiEmbeddingConfig {
   /** Gemini API key */
@@ -10,10 +11,12 @@ export interface GeminiEmbeddingConfig {
 }
 
 export class GeminiEmbeddingService implements EmbeddingService {
-  private model: GenerativeModel;
+  private genAI: GoogleGenAI;
+  private modelName: string;
 
-  private constructor(model: GenerativeModel) {
-    this.model = model;
+  private constructor(genAI: GoogleGenAI, modelName: string) {
+    this.genAI = genAI;
+    this.modelName = modelName;
   }
 
   static create(config: GeminiEmbeddingConfig): GeminiEmbeddingService {
@@ -27,12 +30,11 @@ export class GeminiEmbeddingService implements EmbeddingService {
       throw new Error('modelName is required and cannot be empty');
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const genAI = new GoogleGenAI({ apiKey });
 
-    console.log(`✓ Initialized Gemini embedding service with model: ${modelName}`);
+    logger.info(`✓ Initialized Gemini embedding service with model: ${modelName}`);
 
-    return new GeminiEmbeddingService(model);
+    return new GeminiEmbeddingService(genAI, modelName);
   }
 
   async embed(text: string): Promise<number[]> {
@@ -40,8 +42,12 @@ export class GeminiEmbeddingService implements EmbeddingService {
       throw new Error('text is required and cannot be empty');
     }
 
-    const result = await this.model.embedContent(text);
-    return result.embedding.values;
+    const result = await this.genAI.models.embedContent({
+      model: this.modelName,
+      content: text,
+    });
+
+    return result.values;
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {
@@ -55,10 +61,16 @@ export class GeminiEmbeddingService implements EmbeddingService {
       }
     }
 
-    const result = await this.model.batchEmbedContents({
-      requests: texts.map((text) => ({ content: { parts: [{ text }] } })),
-    });
+    const embeddings: number[][] = [];
 
-    return result.embeddings.map((embedding) => embedding.values);
+    for (const text of texts) {
+      const result = await this.genAI.models.embedContent({
+        model: this.modelName,
+        content: text,
+      });
+      embeddings.push(result.values);
+    }
+
+    return embeddings;
   }
 }

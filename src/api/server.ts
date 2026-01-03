@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { AgentRouterRAGService } from '../services/rag';
+import { logger } from '../utils/logger';
 
 export function createServer(ragService: AgentRouterRAGService): express.Application {
   const app = express();
@@ -17,18 +18,18 @@ export function createServer(ragService: AgentRouterRAGService): express.Applica
         return;
       }
 
-      console.log(`\n[Question] ${question}`);
+      logger.info(`[Question] ${question}`);
 
       const answer = await ragService.ask(question);
 
-      console.log(`[Answer] ${answer}\n`);
+      logger.info(`[Answer] ${answer}`);
 
       res.json({
         question,
         answer,
       });
     } catch (error) {
-      console.error('Error processing question:', error);
+      logger.error('Error processing question', error instanceof Error ? error : undefined);
 
       res.status(500).json({
         error: 'An error occurred while processing your question',
@@ -37,7 +38,7 @@ export function createServer(ragService: AgentRouterRAGService): express.Applica
     }
   });
 
-  app.get('/health', (req: Request, res: Response) => {
+  app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok' });
   });
 

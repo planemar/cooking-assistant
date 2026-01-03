@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { ChromaVectorDBService } from '../services/vector-db';
 import { GeminiEmbeddingService } from '../services/embedding';
+import { logger } from '../utils/logger';
 
 const HASH_ALGORITHM = 'sha256';
 
@@ -41,7 +42,7 @@ async function readDocumentFiles(documentsDir: string): Promise<FileInfo[]> {
 }
 
 async function syncDocuments(): Promise<void> {
-  console.log('Starting document synchronization...\n');
+  logger.info('Starting document synchronization...');
 
   if (!process.env.COLLECTION_NAME || process.env.COLLECTION_NAME.trim() === '') {
     throw new Error('COLLECTION_NAME environment variable is required');
@@ -64,7 +65,7 @@ async function syncDocuments(): Promise<void> {
   }
 
   const documentsDir = path.resolve(process.env.DOCUMENTS_DIR);
-  console.log(`Documents directory: ${documentsDir}\n`);
+  logger.info(`Documents directory: ${documentsDir}`);
 
   const vectorDB = await ChromaVectorDBService.create({
     collectionName: process.env.COLLECTION_NAME,
@@ -77,10 +78,10 @@ async function syncDocuments(): Promise<void> {
   });
 
   const currentFiles = await readDocumentFiles(documentsDir);
-  console.log(`Found ${currentFiles.length} document file(s)\n`);
+  logger.info(`Found ${currentFiles.length} document file(s)`);
 
   if (currentFiles.length === 0) {
-    console.log('No documents to sync');
+    logger.info('No documents to sync');
     return;
   }
 
@@ -106,18 +107,18 @@ async function syncDocuments(): Promise<void> {
 
   toDelete.push(...existingDocsMap.keys());
 
-  console.log(`Documents to add: ${toAdd.length}`);
-  console.log(`Documents to update: ${toUpdate.length}`);
-  console.log(`Documents to delete: ${toDelete.length}\n`);
+  logger.info(`Documents to add: ${toAdd.length}`);
+  logger.info(`Documents to update: ${toUpdate.length}`);
+  logger.info(`Documents to delete: ${toDelete.length}`);
 
   if (toDelete.length > 0) {
-    console.log('Deleting removed documents...');
+    logger.info('Deleting removed documents...');
     await vectorDB.deleteDocuments(toDelete);
-    console.log(`✓ Deleted ${toDelete.length} document(s)\n`);
+    logger.info(`✓ Deleted ${toDelete.length} document(s)`);
   }
 
   if (toAdd.length > 0) {
-    console.log('Adding new documents...');
+    logger.info('Adding new documents...');
     const texts = toAdd.map((f) => f.content);
     const embeddings = await embeddingService.embedBatch(texts);
 
@@ -133,11 +134,11 @@ async function syncDocuments(): Promise<void> {
         },
       }))
     );
-    console.log(`✓ Added ${toAdd.length} document(s)\n`);
+    logger.info(`✓ Added ${toAdd.length} document(s)`);
   }
 
   if (toUpdate.length > 0) {
-    console.log('Updating modified documents...');
+    logger.info('Updating modified documents...');
     const texts = toUpdate.map((f) => f.content);
     const embeddings = await embeddingService.embedBatch(texts);
 
@@ -153,13 +154,13 @@ async function syncDocuments(): Promise<void> {
         },
       }))
     );
-    console.log(`✓ Updated ${toUpdate.length} document(s)\n`);
+    logger.info(`✓ Updated ${toUpdate.length} document(s)`);
   }
 
-  console.log('✓ Document synchronization complete!');
+  logger.info('✓ Document synchronization complete!');
 }
 
 syncDocuments().catch((error) => {
-  console.error('Error during document synchronization:', error);
+  logger.error('Error during document synchronization', error instanceof Error ? error : undefined);
   process.exit(1);
 });

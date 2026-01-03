@@ -7,6 +7,7 @@ import {
   QueryMatch,
   DocumentInfo,
 } from './vector-db.interface';
+import { logger } from '../../utils/logger';
 
 export interface ChromaDBConfig {
   /** Path to ChromaDB storage directory */
@@ -43,11 +44,11 @@ export class ChromaVectorDBService implements VectorDBService {
         name: collectionName,
         metadata: { description: 'Company guides and documentation' },
       });
-      console.log(`✓ Connected to collection: ${collectionName}`);
+      logger.info(`✓ Connected to collection: ${collectionName}`);
 
       return new ChromaVectorDBService(collection);
     } catch (error) {
-      console.error('Failed to initialize ChromaDB:', error);
+      logger.error('Failed to initialize ChromaDB', error instanceof Error ? error : undefined);
       throw error;
     }
   }

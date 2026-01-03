@@ -3,9 +3,10 @@ import { ChromaVectorDBService } from './services/vector-db';
 import { GeminiEmbeddingService } from './services/embedding';
 import { AgentRouterRAGService } from './services/rag';
 import { createServer } from './api/server';
+import { logger } from './utils/logger';
 
 async function initializeServices() {
-  console.log('Initializing services...\n');
+  logger.info('Initializing services...');
 
   if (!process.env.COLLECTION_NAME || process.env.COLLECTION_NAME.trim() === '') {
     throw new Error('COLLECTION_NAME environment variable is required');
@@ -76,7 +77,7 @@ async function initializeServices() {
     minSimilarity,
   });
 
-  console.log('\n✓ All services initialized successfully\n');
+  logger.info('✓ All services initialized successfully');
 
   return { ragService, port };
 }
@@ -88,12 +89,12 @@ async function startServer() {
     const app = createServer(ragService);
 
     app.listen(port, () => {
-      console.log(`✓ Server is running on http://localhost:${port}`);
-      console.log(`  POST /chatbot/ask - Ask a question`);
-      console.log(`  GET  /health      - Health check\n`);
+      logger.info(`✓ Server is running on http://localhost:${port}`);
+      logger.info(`  POST /chatbot/ask - Ask a question`);
+      logger.info(`  GET  /health      - Health check`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    logger.error('Failed to start server', error instanceof Error ? error : undefined);
     process.exit(1);
   }
 }

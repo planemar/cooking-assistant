@@ -1,6 +1,7 @@
 import { VectorDBService } from '../vector-db';
 import { EmbeddingService } from '../embedding';
 import { RAGService } from './rag.interface';
+import { logger } from '../../utils/logger';
 
 const AGENTROUTER_API_URL = 'https://api.agentrouter.org/v1/chat/completions';
 
@@ -82,7 +83,7 @@ export class AgentRouterRAGService implements RAGService {
       throw new Error('minSimilarity must be between 0 and 1');
     }
 
-    console.log(`✓ Initialized AgentRouter RAG service with model: ${modelName}`);
+    logger.info(`✓ Initialized AgentRouter RAG service with model: ${modelName}`);
 
     return new AgentRouterRAGService(vectorDB, embedding, apiKey, modelName, nResults, minSimilarity);
   }
