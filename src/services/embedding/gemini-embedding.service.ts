@@ -44,10 +44,19 @@ export class GeminiEmbeddingService implements EmbeddingService {
 
     const result = await this.genAI.models.embedContent({
       model: this.modelName,
-      content: text,
+      contents: [text],
     });
 
-    return result.values;
+    if (!result.embeddings || result.embeddings.length === 0) {
+      throw new Error('No embeddings returned from Gemini API');
+    }
+
+    const embedding = result.embeddings[0];
+    if (!embedding.values) {
+      throw new Error('Embedding values are undefined');
+    }
+
+    return embedding.values;
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {
@@ -61,16 +70,20 @@ export class GeminiEmbeddingService implements EmbeddingService {
       }
     }
 
-    const embeddings: number[][] = [];
+    const result = await this.genAI.models.embedContent({
+      model: this.modelName,
+      contents: texts,
+    });
 
-    for (const text of texts) {
-      const result = await this.genAI.models.embedContent({
-        model: this.modelName,
-        content: text,
-      });
-      embeddings.push(result.values);
+    if (!result.embeddings) {
+      throw new Error('No embeddings returned from Gemini API');
     }
 
-    return embeddings;
+    return result.embeddings.map((embedding) => {
+      if (!embedding.values) {
+        throw new Error('Embedding values are undefined');
+      }
+      return embedding.values;
+    });
   }
 }

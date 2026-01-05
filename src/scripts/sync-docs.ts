@@ -48,8 +48,8 @@ async function syncDocuments(): Promise<void> {
     throw new Error('COLLECTION_NAME environment variable is required');
   }
 
-  if (!process.env.CHROMA_PATH || process.env.CHROMA_PATH.trim() === '') {
-    throw new Error('CHROMA_PATH environment variable is required');
+  if (!process.env.CHROMA_URL || process.env.CHROMA_URL.trim() === '') {
+    throw new Error('CHROMA_URL environment variable is required');
   }
 
   if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '') {
@@ -69,7 +69,7 @@ async function syncDocuments(): Promise<void> {
 
   const vectorDB = await ChromaVectorDBService.create({
     collectionName: process.env.COLLECTION_NAME,
-    chromaPath: process.env.CHROMA_PATH,
+    chromaUrl: process.env.CHROMA_URL,
   });
 
   const embeddingService = GeminiEmbeddingService.create({

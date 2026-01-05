@@ -1,5 +1,4 @@
 import { ChromaClient, Collection } from 'chromadb';
-import path from 'path';
 import {
   VectorDBService,
   VectorDocument,
@@ -10,8 +9,8 @@ import {
 import { logger } from '../../utils/logger';
 
 export interface ChromaDBConfig {
-  /** Path to ChromaDB storage directory */
-  chromaPath: string;
+  /** ChromaDB server URL (e.g., http://localhost:8000) */
+  chromaUrl: string;
 
   /** Name of the collection to use */
   collectionName: string;
@@ -25,18 +24,29 @@ export class ChromaVectorDBService implements VectorDBService {
   }
 
   static async create(config: ChromaDBConfig): Promise<ChromaVectorDBService> {
-    const { collectionName, chromaPath } = config;
+    const { collectionName, chromaUrl } = config;
 
     if (!collectionName || collectionName.trim() === '') {
       throw new Error('collectionName is required and cannot be empty');
     }
 
-    if (!chromaPath || chromaPath.trim() === '') {
-      throw new Error('chromaPath is required and cannot be empty');
+    if (!chromaUrl || chromaUrl.trim() === '') {
+      throw new Error('chromaUrl is required and cannot be empty');
+    }
+
+    const url = new URL(chromaUrl);
+    if (!url.port) {
+      throw new Error('chromaUrl must include a port (e.g., http://localhost:8000)');
+    }
+
+    const port = parseInt(url.port, 10);
+    if (isNaN(port)) {
+      throw new Error('chromaUrl port must be a valid number');
     }
 
     const client = new ChromaClient({
-      path: path.resolve(chromaPath),
+      host: url.hostname,
+      port: port,
     });
 
     try {
