@@ -1,16 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
-import { EmbeddingService } from './embedding.interface';
-import { logger } from '../../utils/logger';
+import { LLMEmbeddingService } from '../llm.interface';
+import { logger } from '../../../utils/logger';
+import { GeminiModelSpecificConfig } from './gemini.service';
 
-export interface GeminiEmbeddingConfig {
-  /** Gemini API key */
-  apiKey: string;
-
-  /** Model name for embeddings */
-  modelName: string;
-}
-
-export class GeminiEmbeddingService implements EmbeddingService {
+export class GeminiEmbeddingService implements LLMEmbeddingService {
   private genAI: GoogleGenAI;
   private modelName: string;
 
@@ -19,7 +12,7 @@ export class GeminiEmbeddingService implements EmbeddingService {
     this.modelName = modelName;
   }
 
-  static create(config: GeminiEmbeddingConfig): GeminiEmbeddingService {
+  static create(config: GeminiModelSpecificConfig): LLMEmbeddingService {
     const { apiKey, modelName } = config;
 
     if (!apiKey || apiKey.trim() === '') {
@@ -32,7 +25,7 @@ export class GeminiEmbeddingService implements EmbeddingService {
 
     const genAI = new GoogleGenAI({ apiKey });
 
-    logger.info(`✓ Initialized Gemini embedding service with model: ${modelName}`);
+    logger.info('✓ Initialized Gemini embedding service');
 
     return new GeminiEmbeddingService(genAI, modelName);
   }
@@ -42,16 +35,16 @@ export class GeminiEmbeddingService implements EmbeddingService {
       throw new Error('text is required and cannot be empty');
     }
 
-    const result = await this.genAI.models.embedContent({
+    const resp = await this.genAI.models.embedContent({
       model: this.modelName,
       contents: [text],
     });
 
-    if (!result.embeddings || result.embeddings.length === 0) {
+    if (!resp.embeddings || resp.embeddings.length === 0) {
       throw new Error('No embeddings returned from Gemini API');
     }
 
-    const embedding = result.embeddings[0];
+    const embedding = resp.embeddings[0];
     if (!embedding.values) {
       throw new Error('Embedding values are undefined');
     }
@@ -70,16 +63,16 @@ export class GeminiEmbeddingService implements EmbeddingService {
       }
     }
 
-    const result = await this.genAI.models.embedContent({
+    const resp = await this.genAI.models.embedContent({
       model: this.modelName,
       contents: texts,
     });
 
-    if (!result.embeddings) {
+    if (!resp.embeddings) {
       throw new Error('No embeddings returned from Gemini API');
     }
 
-    return result.embeddings.map((embedding) => {
+    return resp.embeddings.map((embedding) => {
       if (!embedding.values) {
         throw new Error('Embedding values are undefined');
       }

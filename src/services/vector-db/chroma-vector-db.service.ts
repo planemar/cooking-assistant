@@ -23,7 +23,7 @@ export class ChromaVectorDBService implements VectorDBService {
     this.collection = collection;
   }
 
-  static async create(config: ChromaDBConfig): Promise<ChromaVectorDBService> {
+  static async create(config: ChromaDBConfig): Promise<VectorDBService> {
     const { collectionName, chromaUrl } = config;
 
     if (!collectionName || collectionName.trim() === '') {

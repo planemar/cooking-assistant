@@ -1,8 +1,4 @@
-/**
- * Service interface for generating text embeddings
- * Provides abstraction over embedding model providers
- */
-export interface EmbeddingService {
+export interface LLMEmbeddingService {
   /**
    * Generate an embedding vector for a single text input
    * @param text - Text content to embed
@@ -17,3 +13,14 @@ export interface EmbeddingService {
    */
   embedBatch(texts: string[]): Promise<number[][]>;
 }
+
+export interface LLMAskingService {
+  /**
+   * Generate an embedding vector for a single text input
+   * @param prompt - prompt for asking ask
+   * @returns answer
+   */
+  ask(prompt: string): Promise<string>;
+}
+
+export interface LLMService extends LLMAskingService, LLMEmbeddingService {}

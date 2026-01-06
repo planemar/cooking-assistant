@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { ChromaVectorDBService } from './services/vector-db';
-import { GeminiEmbeddingService } from './services/embedding';
-import { AgentRouterRAGService } from './services/rag';
+import { GeminiEmbeddingService, GeminiAskingService } from './services/llm/gemini';
+import { MyCompanyRAGService } from './services/rag';
 import { createServer } from './api/server';
 import { logger } from './utils/logger';
 
@@ -24,12 +24,8 @@ async function initializeServices() {
     throw new Error('GEMINI_EMBEDDING_MODEL environment variable is required');
   }
 
-  if (!process.env.AGENTROUTER_API_KEY || process.env.AGENTROUTER_API_KEY.trim() === '') {
-    throw new Error('AGENTROUTER_API_KEY environment variable is required');
-  }
-
-  if (!process.env.AGENTROUTER_MODEL || process.env.AGENTROUTER_MODEL.trim() === '') {
-    throw new Error('AGENTROUTER_MODEL environment variable is required');
+  if (!process.env.GEMINI_ASK_MODEL || process.env.GEMINI_ASK_MODEL.trim() === '') {
+    throw new Error('GEMINI_ASK_MODEL environment variable is required');
   }
 
   if (!process.env.RAG_N_RESULTS) {
@@ -70,9 +66,12 @@ async function initializeServices() {
     modelName: process.env.GEMINI_EMBEDDING_MODEL,
   });
 
-  const ragService = AgentRouterRAGService.create(vectorDB, embeddingService, {
-    apiKey: process.env.AGENTROUTER_API_KEY,
-    modelName: process.env.AGENTROUTER_MODEL,
+  const askingService = GeminiAskingService.create({
+    apiKey: process.env.GEMINI_API_KEY,
+    modelName: process.env.GEMINI_ASK_MODEL,
+  });
+
+  const ragService = MyCompanyRAGService.create(vectorDB, embeddingService, askingService, {
     nResults,
     minSimilarity,
   });

@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
-import { AgentRouterRAGService } from '../services/rag';
+import { RAGService } from '../services/rag';
 import { logger } from '../utils/logger';
 
-export function createServer(ragService: AgentRouterRAGService): express.Application {
+export function createServer(ragService: RAGService): express.Application {
   const app = express();
 
   app.use(express.json());

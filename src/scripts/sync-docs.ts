@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { ChromaVectorDBService } from '../services/vector-db';
-import { GeminiEmbeddingService } from '../services/embedding';
+import { GeminiEmbeddingService } from '../services/llm/gemini';
 import { logger } from '../utils/logger';
 
 const HASH_ALGORITHM = 'sha256';
@@ -121,6 +121,7 @@ async function syncDocuments(): Promise<void> {
     logger.info('Adding new documents...');
     const texts = toAdd.map((f) => f.content);
     const embeddings = await embeddingService.embedBatch(texts);
+    logger.debug(`toAdd ${embeddings.length} embeddings: ${embeddings.toString()}`);
 
     await vectorDB.addDocuments(
       toAdd.map((file, index) => ({
