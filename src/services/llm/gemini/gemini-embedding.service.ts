@@ -3,6 +3,17 @@ import { LLMEmbeddingService } from '../llm.interface';
 import { logger } from '../../../utils/logger';
 import { GeminiModelSpecificConfig } from './gemini.service';
 
+type GeminiTaskType =
+  | 'TASK_TYPE_UNSPECIFIED'
+  | 'RETRIEVAL_QUERY'
+  | 'RETRIEVAL_DOCUMENT'
+  | 'SEMANTIC_SIMILARITY'
+  | 'CLASSIFICATION'
+  | 'CLUSTERING'
+  | 'QUESTION_ANSWERING'
+  | 'FACT_VERIFICATION'
+  | 'CODE_RETRIEVAL_QUERY';
+
 export class GeminiEmbeddingService implements LLMEmbeddingService {
   private genAI: GoogleGenAI;
   private modelName: string;
@@ -30,7 +41,7 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     return new GeminiEmbeddingService(genAI, modelName);
   }
 
-  async embed(text: string): Promise<number[]> {
+  private async embedWithTaskType(text: string, taskType: GeminiTaskType): Promise<number[]> {
     if (!text || text.trim() === '') {
       throw new Error('text is required and cannot be empty');
     }
@@ -38,6 +49,9 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     const resp = await this.genAI.models.embedContent({
       model: this.modelName,
       contents: [text],
+      config: {
+        taskType,
+      },
     });
 
     if (!resp.embeddings || resp.embeddings.length === 0) {
@@ -52,7 +66,23 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     return embedding.values;
   }
 
-  async embedBatch(texts: string[]): Promise<number[][]> {
+  async embed(text: string): Promise<number[]> {
+    return this.embedWithTaskType(text, 'TASK_TYPE_UNSPECIFIED');
+  }
+
+  async embedRetrievalQuery(text: string): Promise<number[]> {
+    return this.embedWithTaskType(text, 'RETRIEVAL_QUERY');
+  }
+
+  async embedRetrievalDocument(text: string): Promise<number[]> {
+    return this.embedWithTaskType(text, 'RETRIEVAL_DOCUMENT');
+  }
+
+  async embedSemanticSimilarity(text: string): Promise<number[]> {
+    return this.embedWithTaskType(text, 'SEMANTIC_SIMILARITY');
+  }
+
+  private async embedBatchWithTaskType(texts: string[], taskType: GeminiTaskType): Promise<number[][]> {
     if (texts.length === 0) {
       return [];
     }
@@ -66,6 +96,9 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     const resp = await this.genAI.models.embedContent({
       model: this.modelName,
       contents: texts,
+      config: {
+        taskType,
+      },
     });
 
     if (!resp.embeddings) {
@@ -78,5 +111,21 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
       }
       return embedding.values;
     });
+  }
+
+  async embedBatch(texts: string[]): Promise<number[][]> {
+    return this.embedBatchWithTaskType(texts, 'TASK_TYPE_UNSPECIFIED');
+  }
+
+  async embedBatchRetrievalDocument(texts: string[]): Promise<number[][]> {
+    return this.embedBatchWithTaskType(texts, 'RETRIEVAL_DOCUMENT');
+  }
+
+  async embedBatchRetrievalQuery(texts: string[]): Promise<number[][]> {
+    return this.embedBatchWithTaskType(texts, 'RETRIEVAL_QUERY');
+  }
+
+  async embedBatchSemanticSimilarity(texts: string[]): Promise<number[][]> {
+    return this.embedBatchWithTaskType(texts, 'SEMANTIC_SIMILARITY');
   }
 }

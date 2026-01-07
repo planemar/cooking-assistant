@@ -41,7 +41,7 @@ async function readDocumentFiles(documentsDir: string): Promise<FileInfo[]> {
   return fileInfos;
 }
 
-async function syncDocuments(): Promise<void> {
+async function syncDocuments(reset: boolean = false): Promise<void> {
   logger.info('Starting document synchronization...');
 
   if (!process.env.COLLECTION_NAME || process.env.COLLECTION_NAME.trim() === '') {
@@ -71,6 +71,12 @@ async function syncDocuments(): Promise<void> {
     collectionName: process.env.COLLECTION_NAME,
     chromaUrl: process.env.CHROMA_URL,
   });
+
+  if (reset) {
+    logger.info('Reset flag detected - resetting ChromaDB instance...');
+    await vectorDB.reset();
+    logger.info('ChromaDB reset complete. Collection will be recreated on next operation.');
+  }
 
   const embeddingService = GeminiEmbeddingService.create({
     apiKey: process.env.GEMINI_API_KEY,
@@ -120,8 +126,7 @@ async function syncDocuments(): Promise<void> {
   if (toAdd.length > 0) {
     logger.info('Adding new documents...');
     const texts = toAdd.map((f) => f.content);
-    const embeddings = await embeddingService.embedBatch(texts);
-    logger.debug(`toAdd ${embeddings.length} embeddings: ${embeddings.toString()}`);
+    const embeddings = await embeddingService.embedBatchRetrievalDocument(texts);
 
     await vectorDB.addDocuments(
       toAdd.map((file, index) => ({
@@ -141,7 +146,7 @@ async function syncDocuments(): Promise<void> {
   if (toUpdate.length > 0) {
     logger.info('Updating modified documents...');
     const texts = toUpdate.map((f) => f.content);
-    const embeddings = await embeddingService.embedBatch(texts);
+    const embeddings = await embeddingService.embedBatchRetrievalDocument(texts);
 
     await vectorDB.updateDocuments(
       toUpdate.map((file, index) => ({
@@ -161,7 +166,11 @@ async function syncDocuments(): Promise<void> {
   logger.info('✓ Document synchronization complete!');
 }
 
-syncDocuments().catch((error) => {
+// Parse command line arguments (skip first 2 elements: node executable and script path)
+const args = process.argv.slice(2);
+const resetFlag = args.includes('--reset') || args.includes('-r');
+
+syncDocuments(resetFlag).catch((error) => {
   logger.error('Error during document synchronization', error instanceof Error ? error : undefined);
   process.exit(1);
 });

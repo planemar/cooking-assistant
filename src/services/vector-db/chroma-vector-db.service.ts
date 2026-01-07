@@ -17,10 +17,18 @@ export interface ChromaDBConfig {
 }
 
 export class ChromaVectorDBService implements VectorDBService {
+  private client: ChromaClient;
   private collection: Collection;
+  private collectionName: string;
 
-  private constructor(collection: Collection) {
+  private constructor(client: ChromaClient, collection: Collection, collectionName: string) {
+    this.client = client;
     this.collection = collection;
+    this.collectionName = collectionName;
+  }
+
+  private static getCollectionMetadata() {
+    return { 'hnsw:space': 'cosine' };
   }
 
   static async create(config: ChromaDBConfig): Promise<VectorDBService> {
@@ -50,13 +58,14 @@ export class ChromaVectorDBService implements VectorDBService {
     });
 
     try {
+      // Get or create collection with cosine distance metric
       const collection = await client.getOrCreateCollection({
         name: collectionName,
-        metadata: { description: 'Company guides and documentation' },
+        metadata: ChromaVectorDBService.getCollectionMetadata(),
       });
       logger.info(`✓ Connected to collection: ${collectionName}`);
 
-      return new ChromaVectorDBService(collection);
+      return new ChromaVectorDBService(client, collection, collectionName);
     } catch (error) {
       logger.error('Failed to initialize ChromaDB', error instanceof Error ? error : undefined);
       throw error;
@@ -172,5 +181,17 @@ export class ChromaVectorDBService implements VectorDBService {
     }
 
     return documentInfos;
+  }
+
+  async reset(): Promise<void> {
+    await this.client.deleteCollection({ name: this.collectionName });
+    logger.info(`✓ Collection '${this.collectionName}' deleted`);
+
+    // Recreate the collection so the service remains usable
+    this.collection = await this.client.createCollection({
+      name: this.collectionName,
+      metadata: ChromaVectorDBService.getCollectionMetadata(),
+    });
+    logger.info(`✓ Collection '${this.collectionName}' recreated`);
   }
 }

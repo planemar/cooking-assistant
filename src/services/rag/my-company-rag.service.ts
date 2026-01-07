@@ -75,18 +75,18 @@ export class MyCompanyRAGService implements RAGService {
       throw new Error('question is required and cannot be empty');
     }
 
-    const questionEmbedding = await this.embeddingService.embed(question);
-    logger.debug(`Question embedding: ${questionEmbedding.toString()}`);
+    const questionEmbedding = await this.embeddingService.embedRetrievalQuery(question);
     const matches = await this.vectorDB.query(questionEmbedding, this.nResults, this.minSimilarity);
 
     if (matches.length === 0) {
       return NO_RESULTS_MESSAGE;
     }
 
+    logger.debug(`Top match simiarity: ${matches[0].similarity}`);
+    logger.debug(`Top match doc: ${matches[0].document.substring(0, 30)}`);
     const context = matches
       .map((match, index) => `[Document ${index + 1}] (Similarity: ${match.similarity.toFixed(2)})\n${match.document}`)
       .join('\n\n');
-    logger.debug(`Prompt context: ${context}`);
 
     const prompt = this.buildPrompt(question, context);
     const answer = await this.askingService.ask(prompt);

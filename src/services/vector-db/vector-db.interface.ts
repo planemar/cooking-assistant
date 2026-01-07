@@ -92,4 +92,9 @@ export interface VectorDBService {
    * @returns Array of document IDs with metadata
    */
   getAllDocumentInfo(): Promise<DocumentInfo[]>;
+
+  /**
+   * Reset the entire database instance (deletes all collections)
+   */
+  reset(): Promise<void>;
 }
