@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { ChromaVectorDBService } from './services/vector-db';
 import { GeminiEmbeddingService, GeminiAskingService } from './services/llm/gemini';
-import { MyCompanyRAGService } from './services/rag';
+import { MyCustomRAGService } from './services/rag';
 import { createServer } from './api/server';
 import { logger } from './utils/logger';
 
@@ -71,7 +71,7 @@ async function initializeServices() {
     modelName: process.env.GEMINI_ASK_MODEL,
   });
 
-  const ragService = MyCompanyRAGService.create(vectorDB, embeddingService, askingService, {
+  const ragService = MyCustomRAGService.create(vectorDB, embeddingService, askingService, {
     nResults,
     minSimilarity,
   });
