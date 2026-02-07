@@ -58,7 +58,8 @@ Simply drop your recipe text files into the data folder, sync, and ask questions
 
 5. **Start Server**
    ```bash
-   npm run dev
+   npm run build
+   npm run start
    ```
 
 ## Usage

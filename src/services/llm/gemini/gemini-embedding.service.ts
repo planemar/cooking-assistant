@@ -41,6 +41,7 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     return new GeminiEmbeddingService(genAI, modelName);
   }
 
+  // TODO: max batch size is 100, need to split texts
   private async embedBatchWithTaskType(texts: string[], taskType: GeminiTaskType): Promise<number[][]> {
     if (texts.length === 0) {
       return [];
