@@ -41,47 +41,6 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     return new GeminiEmbeddingService(genAI, modelName);
   }
 
-  private async embedWithTaskType(text: string, taskType: GeminiTaskType): Promise<number[]> {
-    if (!text || text.trim() === '') {
-      throw new Error('text is required and cannot be empty');
-    }
-
-    const resp = await this.genAI.models.embedContent({
-      model: this.modelName,
-      contents: [text],
-      config: {
-        taskType,
-      },
-    });
-
-    if (!resp.embeddings || resp.embeddings.length === 0) {
-      throw new Error('No embeddings returned from Gemini API');
-    }
-
-    const embedding = resp.embeddings[0];
-    if (!embedding.values) {
-      throw new Error('Embedding values are undefined');
-    }
-
-    return embedding.values;
-  }
-
-  async embed(text: string): Promise<number[]> {
-    return this.embedWithTaskType(text, 'TASK_TYPE_UNSPECIFIED');
-  }
-
-  async embedRetrievalQuery(text: string): Promise<number[]> {
-    return this.embedWithTaskType(text, 'RETRIEVAL_QUERY');
-  }
-
-  async embedRetrievalDocument(text: string): Promise<number[]> {
-    return this.embedWithTaskType(text, 'RETRIEVAL_DOCUMENT');
-  }
-
-  async embedSemanticSimilarity(text: string): Promise<number[]> {
-    return this.embedWithTaskType(text, 'SEMANTIC_SIMILARITY');
-  }
-
   private async embedBatchWithTaskType(texts: string[], taskType: GeminiTaskType): Promise<number[][]> {
     if (texts.length === 0) {
       return [];
@@ -127,5 +86,30 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
 
   async embedBatchSemanticSimilarity(texts: string[]): Promise<number[][]> {
     return this.embedBatchWithTaskType(texts, 'SEMANTIC_SIMILARITY');
+  }
+
+  private async embedWithTaskType(text: string, taskType: GeminiTaskType): Promise<number[]> {
+    const res = await this.embedBatchWithTaskType([text], taskType);
+    if (res.length === 0) {
+      throw new Error('No embeddings returned from Gemini API');
+    }
+
+    return res[0];
+  }
+
+  async embed(text: string): Promise<number[]> {
+    return this.embedWithTaskType(text, 'TASK_TYPE_UNSPECIFIED');
+  }
+
+  async embedRetrievalQuery(text: string): Promise<number[]> {
+    return this.embedWithTaskType(text, 'RETRIEVAL_QUERY');
+  }
+
+  async embedRetrievalDocument(text: string): Promise<number[]> {
+    return this.embedWithTaskType(text, 'RETRIEVAL_DOCUMENT');
+  }
+
+  async embedSemanticSimilarity(text: string): Promise<number[]> {
+    return this.embedWithTaskType(text, 'SEMANTIC_SIMILARITY');
   }
 }

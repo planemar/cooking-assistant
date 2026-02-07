@@ -1,0 +1,12 @@
+Meatballs Recipe
+
+Beef meatballs in a rich tomato sauce served with spaghetti.
+
+KEY INFORMATION:
+- Type: Main
+- Main ingredients: Beef Mince, Onion, Garlic, Tomato sauce, Spaghetti
+- Serves: 4
+- Prep Time: 10 minutes
+- Cook Time: 20 minutes
+- Total Time: 30 minutes
+- Labels: Style - Pasta, Ingredient - Meat - Beef, Favourite - James, Favourite - Florence

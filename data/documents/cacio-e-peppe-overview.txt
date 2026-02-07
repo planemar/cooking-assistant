@@ -1,0 +1,13 @@
+Cacio e Peppe Recipe
+
+A beautifully simple yet technically complex Italian pasta dish.
+
+KEY INFORMATION:
+- Type: Main
+- Main ingredients: Spaghetti, Pecorino Romano Cheese, Black Peppercorns
+- Serves: 2
+- Prep Time: 5 minutes
+- Cook Time: 15 minutes
+- Total Time: 20 minutes
+- Cuisine: Italian
+- Labels: Style - Pasta, Style - Vegetarian, Ingredient - Cheese, Style - Italian, Chef - Alex

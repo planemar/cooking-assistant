@@ -44,6 +44,7 @@ async function readDocumentFiles(documentsDir: string): Promise<FileInfo[]> {
 async function syncDocuments(reset: boolean = false): Promise<void> {
   logger.info('Starting document synchronization...');
 
+  // TODO: read and validate conf in a separate object
   if (!process.env.COLLECTION_NAME || process.env.COLLECTION_NAME.trim() === '') {
     throw new Error('COLLECTION_NAME environment variable is required');
   }

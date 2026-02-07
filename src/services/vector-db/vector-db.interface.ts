@@ -41,10 +41,7 @@ export interface QueryMatch extends StoredDocument {
  * Lightweight document info for syncing purposes
  */
 export interface DocumentInfo {
-  /** Unique identifier for the document */
   id: string;
-
-  /** Metadata only (contains hash for sync checking) */
   metadata: Record<string, any>;
 }
 
@@ -88,13 +85,13 @@ export interface VectorDBService {
   getDocument(id: string): Promise<StoredDocument | null>;
 
   /**
-   * Get all document IDs and metadata (lightweight, for sync operations)
+   * Get all document IDs and metadata
    * @returns Array of document IDs with metadata
    */
   getAllDocumentInfo(): Promise<DocumentInfo[]>;
 
   /**
-   * Reset the entire database instance (deletes all collections)
+   * Reset the collection
    */
   reset(): Promise<void>;
 }

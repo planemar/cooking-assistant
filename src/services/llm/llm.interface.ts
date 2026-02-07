@@ -37,11 +37,10 @@ export interface LLMEmbeddingService {
 
 export interface LLMAskingService {
   /**
-   * Generate an embedding vector for a single text input
    * @param prompt - prompt for asking ask
    * @returns answer
    */
   ask(prompt: string): Promise<string>;
 }
 
-export interface LLMService extends LLMAskingService, LLMEmbeddingService {}
+export interface LLMService extends LLMAskingService, LLMEmbeddingService { }

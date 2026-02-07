@@ -39,6 +39,8 @@ export function createServer(ragService: RAGService): express.Application {
   });
 
   app.get('/health', (_req: Request, res: Response) => {
+    // TODO: dummy check for now, replace with a proper health check
+    // e.g. check DB connection and Gemini API access 
     res.json({ status: 'ok' });
   });
 

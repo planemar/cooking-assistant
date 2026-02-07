@@ -1,0 +1,12 @@
+Fish Pie Recipe
+
+A classic family fish pie topped with cheesy mashed potato.
+
+KEY INFORMATION:
+- Type: Main
+- Main ingredients: Potatoes, Milk, Butter, Fish mix, Cheese
+- Serves: 3
+- Prep Time: 20 minutes
+- Cook Time: 25 minutes
+- Total Time: 45 minutes
+- Labels: Ingredient - Fish, Favourite - James, Style - Family Meal
