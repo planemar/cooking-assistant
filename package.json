@@ -1,7 +1,7 @@
 {
-  "name": "ai-chatbot-learning",
+  "name": "cooking-assistant",
   "version": "1.0.0",
-  "description": "Educational AI chatbot with RAG using Gemini embeddings and AgentRouter",
+  "description": "A RAG chatbot for your personal recipe collection",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
