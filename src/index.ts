@@ -86,6 +86,8 @@ async function startServer() {
     const { ragService, port } = await initializeServices();
 
     const app = createServer(ragService);
+    // temp to check the new github action
+    return;
 
     app.listen(port, () => {
       logger.info(`✓ Server is running on http://localhost:${port}`);
