@@ -26,6 +26,21 @@ describe('ParagraphSentenceChunker', () => {
       expect(chunker.chunk('   ', 500, 100)).toEqual([]);
       expect(chunker.chunk('\n\n', 500, 100)).toEqual([]);
     });
+
+    it('should handle single character content', () => {
+      const result = chunker.chunk('X', 100, 10);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe('X');
+    });
+
+    it('should handle very large chunk size', () => {
+      const input = 'Short text here';
+      const result = chunker.chunk(input, 10000, 50);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(input);
+    });
   });
 
   describe('Error handling', () => {
@@ -38,24 +53,14 @@ describe('ParagraphSentenceChunker', () => {
       expect(() => chunker.chunk('test', 0, 0)).toThrow();
       expect(() => chunker.chunk('test', -100, 0)).toThrow();
     });
+
+    it('should throw error when overlap is negative', () => {
+      expect(() => chunker.chunk('test', 100, -10)).toThrow();
+    });
   });
 
   describe('Paragraph-aware splitting', () => {
-    it('should split two paragraphs into 2 chunks with overlap', () => {
-      const para1 = 'a'.repeat(300);
-      const para2 = 'b'.repeat(300);
-      const input = `${para1}\n\n${para2}`;
-      const result = chunker.chunk(input, 400, 80);
-
-      expect(result.length).toBeGreaterThan(1);
-      // First chunk should contain first paragraph
-      expect(result[0]).toContain('a'.repeat(100));
-      // Verify overlap exists (second chunk starts with last 80 chars of first chunk)
-      const firstChunkEnd = result[0].slice(-80);
-      expect(result[1].startsWith(firstChunkEnd)).toBe(true);
-    });
-
-    it('should respect paragraph boundaries when accumulating chunks', () => {
+    it('should split paragraphs and respect boundaries', () => {
       const para1 = 'a'.repeat(150);
       const para2 = 'b'.repeat(150);
       const para3 = 'c'.repeat(150);
@@ -65,9 +70,8 @@ describe('ParagraphSentenceChunker', () => {
       const result = chunker.chunk(input, 400, 80);
 
       expect(result.length).toBeGreaterThan(1);
-      // Each chunk should not exceed the chunk size significantly (allowing for paragraph boundaries)
       for (let i = 0; i < result.length; i++) {
-        expect(result[i].length).toBeLessThanOrEqual(450); // Allow some tolerance for paragraph boundaries
+        expect(result[i].length).toBeLessThanOrEqual(480); // 400 + 80
       }
     });
 
@@ -78,71 +82,149 @@ describe('ParagraphSentenceChunker', () => {
       const input = `${para1}\n\n${para2}\n\n${para3}`;
       const result = chunker.chunk(input, 600, 100);
 
-      // First chunk should contain para1 + para2 (500 chars < 600)
       expect(result[0]).toContain('a'.repeat(100));
       expect(result[0]).toContain('b'.repeat(100));
-
-      // Verify chunks exist
       expect(result.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Sentence-aware fallback', () => {
-    it('should fall back to sentence splitting for large paragraphs', () => {
-      const sentences = [
-        'This is sentence one. ',
-        'This is sentence two. ',
-        'This is sentence three. ',
-        'This is sentence four. ',
-        'This is sentence five. ',
-      ];
-      const paragraph = sentences.join('').repeat(10); // ~1000 chars
-      const result = chunker.chunk(paragraph, 500, 100);
+  describe('Overlap behavior', () => {
+    it('should add overlap between chunks', () => {
+      const text = 'AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIII';
+      const result = chunker.chunk(text, 15, 5);
 
       expect(result.length).toBeGreaterThan(1);
-      // Each chunk should be around the chunk size
-      for (let i = 0; i < result.length; i++) {
-        expect(result[i].length).toBeLessThanOrEqual(600); // Allow some tolerance
+
+      // First chunk has no overlap prepended
+      expect(result[0].length).toBeLessThanOrEqual(15);
+
+      // Other chunks can exceed chunkSize by up to chunkOverlap
+      for (let i = 1; i < result.length; i++) {
+        expect(result[i].length).toBeLessThanOrEqual(20); // 15 + 5
+      }
+
+      // Verify overlap connectivity
+      for (let i = 1; i < result.length; i++) {
+        const prevEnd = result[i - 1].slice(-5);
+        expect(result[i].startsWith(prevEnd)).toBe(true);
       }
     });
-  });
 
-  describe('Hard character split fallback', () => {
-    it('should fall back to hard character split for huge sentences', () => {
-      const hugeSentence = 'a'.repeat(2000);
-      const result = chunker.chunk(hugeSentence, 500, 100);
+    it('should preserve all data with overlap', () => {
+      const text = 'AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIII';
+      const result = chunker.chunk(text, 15, 5);
+
+      // Reconstruct by removing overlap from each chunk
+      let reconstructed = result[0];
+      for (let i = 1; i < result.length; i++) {
+        reconstructed += result[i].slice(5);
+      }
+
+      expect(reconstructed).toBe(text);
+    });
+
+    it('should handle overlap when chunk is shorter than overlap size', () => {
+      const text = 'AAA\n\nBBBBBBBBBB\n\nCCCCCCCCCC';
+      const result = chunker.chunk(text, 15, 10);
 
       expect(result.length).toBeGreaterThan(1);
-      // First chunk should be exactly 500 chars
-      expect(result[0]).toBe('a'.repeat(500));
-      // Verify overlap (second chunk should start with last 100 chars of first)
-      expect(result[1].startsWith('a'.repeat(100))).toBe(true);
-    });
-  });
 
-  describe('No overlap mode', () => {
+      // First chunk without overlap
+      expect(result[0].length).toBeLessThanOrEqual(15);
+
+      // Other chunks can exceed by up to overlap amount
+      for (let i = 1; i < result.length; i++) {
+        expect(result[i].length).toBeLessThanOrEqual(25); // 15 + 10
+      }
+    });
+
     it('should create chunks with no overlap when overlap is 0', () => {
       const input = 'a'.repeat(2000);
       const result = chunker.chunk(input, 500, 0);
 
-      expect(result.length).toBe(4); // 2000 / 500 = 4
-      // Verify no overlap: concatenating all chunks should equal input
+      expect(result.length).toBe(4);
       const reconstructed = result.join('');
       expect(reconstructed).toBe(input);
     });
   });
 
+  describe('Hard split fallback', () => {
+    it('should split text with no natural boundaries', () => {
+      const text = 'A'.repeat(100);
+      const result = chunker.chunk(text, 25, 0);
+
+      expect(result).toHaveLength(4);
+      expect(result[0]).toBe('A'.repeat(25));
+      expect(result[1]).toBe('A'.repeat(25));
+      expect(result[2]).toBe('A'.repeat(25));
+      expect(result[3]).toBe('A'.repeat(25));
+    });
+
+    it('should handle hard split with overlap', () => {
+      const text = 'a'.repeat(2000);
+      const result = chunker.chunk(text, 500, 100);
+
+      expect(result.length).toBeGreaterThan(1);
+      expect(result[0]).toBe('a'.repeat(500));
+      expect(result[1].startsWith('a'.repeat(100))).toBe(true);
+
+      // Verify no data loss
+      let reconstructed = result[0];
+      for (let i = 1; i < result.length; i++) {
+        reconstructed += result[i].slice(100);
+      }
+      expect(reconstructed).toBe(text);
+    });
+  });
+
+  describe('Sentence splitting', () => {
+    it('should split large paragraph by sentences', () => {
+      const text = 'First sentence here. Second sentence here. Third sentence here. Fourth sentence here.';
+      const result = chunker.chunk(text, 30, 5);
+
+      expect(result.length).toBeGreaterThan(1);
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i].length).toBeLessThanOrEqual(35); // 30 + 5
+      }
+    });
+
+    it('should preserve different sentence endings', () => {
+      const text = 'First sentence! Second sentence? Third sentence.';
+      const result = chunker.chunk(text, 20, 3);
+
+      const combined = result.join('');
+      expect(combined).toContain('First sentence!');
+      expect(combined).toContain('Second sentence?');
+      expect(combined).toContain('Third sentence.');
+    });
+
+    it('should handle text with no sentence boundaries', () => {
+      const text = 'NoSentenceBoundariesHereJustOneVeryLongWordThatKeepsGoingAndGoingAndGoing';
+      const result = chunker.chunk(text, 20, 5);
+
+      expect(result.length).toBeGreaterThan(1);
+
+      // First chunk without overlap
+      expect(result[0].length).toBeLessThanOrEqual(20);
+
+      // Other chunks can exceed by up to overlap amount
+      for (let i = 1; i < result.length; i++) {
+        expect(result[i].length).toBeLessThanOrEqual(25); // 20 + 5
+      }
+    });
+  });
+
   describe('Real recipe content', () => {
     it('should handle real recipe text correctly', () => {
-      const recipeOverview = `Chicken Katsu Curry is a Japanese-inspired comfort food classic.
+      const recipe = `Chicken Katsu Curry is a Japanese-inspired comfort food classic.
 
 This recipe combines crispy breaded chicken cutlets with a rich, mildly spiced curry sauce.
 
 The dish features tender chicken breast coated in panko breadcrumbs and fried until golden.
 
-Served over steamed rice with curry sauce, it's a satisfying and flavorful meal.`;
+Served over steamed rice with curry sauce, it's a satisfying and flavorful meal.
 
-      const recipeIngredients = `For the chicken:
+For the chicken:
 - 2 chicken breasts
 - 100g plain flour
 - 2 eggs beaten
@@ -158,9 +240,9 @@ For the curry sauce:
 - 2 tbsp plain flour
 - 500ml chicken stock
 - 1 tbsp soy sauce
-- 1 tbsp honey`;
+- 1 tbsp honey
 
-      const recipeInstructions = `1. Prepare the chicken by flattening breasts to even thickness.
+1. Prepare the chicken by flattening breasts to even thickness.
 2. Set up breading station with flour, beaten eggs, and panko.
 3. Coat each chicken piece in flour, then egg, then panko.
 4. Heat oil in a large pan over medium-high heat.
@@ -169,20 +251,15 @@ For the curry sauce:
 7. Add garlic and curry powder, cook for 1 minute.
 8. Stir in flour, then gradually add stock.
 9. Add soy sauce and honey, simmer for 15 minutes.
-10. Slice chicken and serve over rice with curry sauce.`;
+10. Slice chicken and serve over rice with curry sauce.
+`;
 
-      const fullRecipe = `${recipeOverview}\n\n${recipeIngredients}\n\n${recipeInstructions}`;
-
-      const result = chunker.chunk(fullRecipe, 500, 100);
+      const result = chunker.chunk(recipe, 500, 100);
 
       expect(result.length).toBeGreaterThan(0);
-      // Verify no chunk is empty
       for (let i = 0; i < result.length; i++) {
         expect(result[i].trim().length).toBeGreaterThan(0);
-      }
-      // Verify all chunks are within reasonable size bounds
-      for (let i = 0; i < result.length; i++) {
-        expect(result[i].length).toBeLessThanOrEqual(600); // Allow some tolerance
+        expect(result[i].length).toBeLessThanOrEqual(600); // 500 + 100
       }
     });
   });

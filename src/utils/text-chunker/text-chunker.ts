@@ -2,7 +2,17 @@ import { TextChunker } from './text-chunker.interface';
 
 const PARAGRAPH_SEPARATOR = '\n\n';
 const PARAGRAPH_SPLIT_REGEX = new RegExp(`${PARAGRAPH_SEPARATOR}+`);
+const SENTENCE_SPLIT_REGEX = new RegExp('(?<=[.!?])\\s+(?=[A-Z])');
 
+/**
+ * Text chunker that prioritizes semantic boundaries (paragraphs, sentences).
+ *
+ * Behavior:
+ * - Uses three-tier approach: paragraph-aware → sentence-aware → hard split
+ * - Chunks may exceed chunkSize when:
+ *   - Overlap is applied (up to chunkSize + chunkOverlap)
+ *   - Respecting paragraph/sentence boundaries
+ */
 export class ParagraphSentenceChunker implements TextChunker {
   chunk(content: string, chunkSize: number, chunkOverlap: number): string[] {
     if (chunkSize <= 0) {
@@ -73,7 +83,7 @@ export class ParagraphSentenceChunker implements TextChunker {
   }
 
   private splitLargeParagraph(paragraph: string, chunkSize: number): string[] {
-    const sentences = paragraph.split(/(?<=[.!?])\s+(?=[A-Z])/);
+    const sentences = paragraph.split(SENTENCE_SPLIT_REGEX);
 
     if (sentences.length === 0) {
       sentences.push(paragraph);
@@ -124,13 +134,16 @@ export class ParagraphSentenceChunker implements TextChunker {
     for (let i = 0; i < chunks.length; i++) {
       let chunkText = chunks[i];
 
-      if (i > 0) {
-        const previousChunk = chunks[i - 1];
-        const actualOverlap = Math.min(overlap, previousChunk.length);
-        const overlapText = previousChunk.slice(-actualOverlap);
-        chunkText = overlapText + chunkText;
+      if (i === 0) {
+        overlappedChunks.push(chunkText);
+        continue;
       }
 
+      const previousChunk = overlappedChunks[i - 1];
+      const actualOverlap = Math.min(overlap, previousChunk.length);
+      const overlapText = previousChunk.slice(-actualOverlap);
+
+      chunkText = overlapText + chunkText;
       overlappedChunks.push(chunkText);
     }
 
