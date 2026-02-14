@@ -13,16 +13,16 @@ class Logger {
     const level = process.env.LOG_LEVEL?.toUpperCase();
 
     switch (level) {
-      case 'DEBUG':
+      case "DEBUG":
         this.logLevel = LogLevel.DEBUG;
         break;
-      case 'INFO':
+      case "INFO":
         this.logLevel = LogLevel.INFO;
         break;
-      case 'WARN':
+      case "WARN":
         this.logLevel = LogLevel.WARN;
         break;
-      case 'ERROR':
+      case "ERROR":
         this.logLevel = LogLevel.ERROR;
         break;
       default:
@@ -48,26 +48,26 @@ class Logger {
 
   debug(message: string): void {
     if (this.shouldLog(LogLevel.DEBUG)) {
-      console.debug(this.formatMessage('DEBUG', message));
+      console.debug(this.formatMessage("DEBUG", message));
     }
   }
 
   info(message: string): void {
     if (this.shouldLog(LogLevel.INFO)) {
-      console.info(this.formatMessage('INFO', message));
+      console.info(this.formatMessage("INFO", message));
     }
   }
 
   warn(message: string): void {
     if (this.shouldLog(LogLevel.WARN)) {
-      console.warn(this.formatMessage('WARN', message));
+      console.warn(this.formatMessage("WARN", message));
     }
   }
 
   error(message: string, error?: Error): void {
     if (this.shouldLog(LogLevel.ERROR)) {
       const errorMessage = error ? `${message}: ${error.message}` : message;
-      console.error(this.formatMessage('ERROR', errorMessage));
+      console.error(this.formatMessage("ERROR", errorMessage));
 
       if (error?.stack) {
         console.error(error.stack);

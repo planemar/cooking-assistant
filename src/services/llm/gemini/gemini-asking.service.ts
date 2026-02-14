@@ -1,7 +1,7 @@
-import { GoogleGenAI } from '@google/genai';
-import { LLMAskingService } from '../llm.interface';
-import { logger } from '../../../utils/logger';
-import { GeminiModelSpecificConfig } from './gemini.service';
+import { GoogleGenAI } from "@google/genai";
+import { logger } from "../../../utils/logger";
+import type { LLMAskingService } from "../llm.interface";
+import type { GeminiModelSpecificConfig } from "./gemini.service";
 
 export class GeminiAskingService implements LLMAskingService {
   private genAI: GoogleGenAI;
@@ -15,17 +15,17 @@ export class GeminiAskingService implements LLMAskingService {
   static create(config: GeminiModelSpecificConfig): LLMAskingService {
     const { apiKey, modelName } = config;
 
-    if (!apiKey || apiKey.trim() === '') {
-      throw new Error('apiKey is required and cannot be empty');
+    if (!apiKey || apiKey.trim() === "") {
+      throw new Error("apiKey is required and cannot be empty");
     }
 
-    if (!modelName || modelName.trim() === '') {
-      throw new Error('modelName is required and cannot be empty');
+    if (!modelName || modelName.trim() === "") {
+      throw new Error("modelName is required and cannot be empty");
     }
 
     const genAI = new GoogleGenAI({ apiKey });
 
-    logger.info('✓ Initialized Gemini asking service');
+    logger.info("✓ Initialized Gemini asking service");
 
     return new GeminiAskingService(genAI, modelName);
   }
@@ -38,10 +38,10 @@ export class GeminiAskingService implements LLMAskingService {
     const resp = await this.genAI.models.generateContent({
       model: this.modelName,
       contents: prompt,
-    })
+    });
 
     if (!resp.text) {
-      throw new Error('No answer returned from Gemini API');
+      throw new Error("No answer returned from Gemini API");
     }
 
     return resp.text;
