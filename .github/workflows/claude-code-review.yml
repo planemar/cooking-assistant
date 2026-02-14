@@ -31,6 +31,8 @@ jobs:
             - Security implications
             - Performance considerations
 
+            Be precise, talk only about what is bad and needs to be fixed, without meaningless texts and without pointing out what is good in the code.
+
             Note: The PR branch is already checked out in the current working directory.
 
             Use `gh pr comment` for top-level feedback.
