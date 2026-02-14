@@ -1,8 +1,8 @@
-import { TextChunker } from './text-chunker.interface';
+import type { TextChunker } from './text-chunker.interface';
 
 const PARAGRAPH_SEPARATOR = '\n\n';
 const PARAGRAPH_SPLIT_REGEX = new RegExp(`${PARAGRAPH_SEPARATOR}+`);
-const SENTENCE_SPLIT_REGEX = new RegExp('(?<=[.!?])\\s+(?=[A-Za-z])');
+const SENTENCE_SPLIT_REGEX = /(?<=[.!?])\s+(?=[A-Za-z])/;
 
 /**
  * Text chunker that prioritizes semantic boundaries (paragraphs, sentences).
@@ -34,15 +34,21 @@ export class ParagraphSentenceChunker implements TextChunker {
       return [trimmedContent];
     }
 
-    return this.splitIntoParagraphAwareChunks(trimmedContent, chunkSize, chunkOverlap);
+    return this.splitIntoParagraphAwareChunks(
+      trimmedContent,
+      chunkSize,
+      chunkOverlap,
+    );
   }
 
   private splitIntoParagraphAwareChunks(
     content: string,
     chunkSize: number,
-    chunkOverlap: number
+    chunkOverlap: number,
   ): string[] {
-    const paragraphs = content.split(PARAGRAPH_SPLIT_REGEX).filter(p => p.trim().length > 0);
+    const paragraphs = content
+      .split(PARAGRAPH_SPLIT_REGEX)
+      .filter((p) => p.trim().length > 0);
     const chunks: string[] = [];
     let currentChunk = '';
 

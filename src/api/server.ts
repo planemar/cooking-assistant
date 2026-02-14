@@ -1,5 +1,5 @@
-import express, { Request, Response } from 'express';
-import { RAGService } from '../services/rag';
+import express, { type Request, type Response } from 'express';
+import type { RAGService } from '../services/rag';
 import { logger } from '../utils/logger';
 
 export function createServer(ragService: RAGService): express.Application {
@@ -29,7 +29,10 @@ export function createServer(ragService: RAGService): express.Application {
         answer,
       });
     } catch (error) {
-      logger.error('Error processing question', error instanceof Error ? error : undefined);
+      logger.error(
+        'Error processing question',
+        error instanceof Error ? error : undefined,
+      );
 
       res.status(500).json({
         error: 'An error occurred while processing your question',
@@ -40,7 +43,7 @@ export function createServer(ragService: RAGService): express.Application {
 
   app.get('/health', (_req: Request, res: Response) => {
     // TODO: dummy check for now, replace with a proper health check
-    // e.g. check DB connection and Gemini API access 
+    // e.g. check DB connection and Gemini API access
     res.json({ status: 'ok' });
   });
 
