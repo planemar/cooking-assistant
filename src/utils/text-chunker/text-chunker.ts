@@ -2,7 +2,7 @@ import { TextChunker } from './text-chunker.interface';
 
 const PARAGRAPH_SEPARATOR = '\n\n';
 const PARAGRAPH_SPLIT_REGEX = new RegExp(`${PARAGRAPH_SEPARATOR}+`);
-const SENTENCE_SPLIT_REGEX = new RegExp('(?<=[.!?])\\s+(?=[A-Z])');
+const SENTENCE_SPLIT_REGEX = new RegExp('(?<=[.!?])\\s+(?=[A-Za-z])');
 
 /**
  * Text chunker that prioritizes semantic boundaries (paragraphs, sentences).
@@ -84,11 +84,6 @@ export class ParagraphSentenceChunker implements TextChunker {
 
   private splitLargeParagraph(paragraph: string, chunkSize: number): string[] {
     const sentences = paragraph.split(SENTENCE_SPLIT_REGEX);
-
-    if (sentences.length === 0) {
-      sentences.push(paragraph);
-    }
-
     const chunks: string[] = [];
     let currentChunk = '';
 
@@ -117,7 +112,7 @@ export class ParagraphSentenceChunker implements TextChunker {
       chunks.push(currentChunk);
     }
 
-    return chunks.length > 0 ? chunks : [paragraph];
+    return chunks;
   }
 
   private hardSplitText(text: string, chunkSize: number): string[] {

@@ -198,6 +198,16 @@ describe('ParagraphSentenceChunker', () => {
       expect(combined).toContain('Third sentence.');
     });
 
+    it('should split sentences starting with lowercase', () => {
+      const text = 'Mix well. then add salt. and stir thoroughly.';
+      const result = chunker.chunk(text, 20, 3);
+
+      expect(result.length).toBeGreaterThan(1);
+      const combined = result.join('');
+      expect(combined).toContain('Mix well.');
+      expect(combined).toContain('then add salt.');
+    });
+
     it('should handle text with no sentence boundaries', () => {
       const text = 'NoSentenceBoundariesHereJustOneVeryLongWordThatKeepsGoingAndGoingAndGoing';
       const result = chunker.chunk(text, 20, 5);
