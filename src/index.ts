@@ -1,14 +1,20 @@
 import 'dotenv/config';
-import { ChromaVectorDBService } from './services/vector-db';
-import { GeminiEmbeddingService, GeminiAskingService } from './services/llm/gemini';
-import { MyCustomRAGService } from './services/rag';
 import { createServer } from './api/server';
+import {
+  GeminiAskingService,
+  GeminiEmbeddingService,
+} from './services/llm/gemini';
+import { MyCustomRAGService } from './services/rag';
+import { ChromaVectorDBService } from './services/vector-db';
 import { logger } from './utils/logger';
 
 async function initializeServices() {
   logger.info('Initializing services...');
 
-  if (!process.env.COLLECTION_NAME || process.env.COLLECTION_NAME.trim() === '') {
+  if (
+    !process.env.COLLECTION_NAME ||
+    process.env.COLLECTION_NAME.trim() === ''
+  ) {
     throw new Error('COLLECTION_NAME environment variable is required');
   }
 
@@ -20,11 +26,17 @@ async function initializeServices() {
     throw new Error('GEMINI_API_KEY environment variable is required');
   }
 
-  if (!process.env.GEMINI_EMBEDDING_MODEL || process.env.GEMINI_EMBEDDING_MODEL.trim() === '') {
+  if (
+    !process.env.GEMINI_EMBEDDING_MODEL ||
+    process.env.GEMINI_EMBEDDING_MODEL.trim() === ''
+  ) {
     throw new Error('GEMINI_EMBEDDING_MODEL environment variable is required');
   }
 
-  if (!process.env.GEMINI_ASK_MODEL || process.env.GEMINI_ASK_MODEL.trim() === '') {
+  if (
+    !process.env.GEMINI_ASK_MODEL ||
+    process.env.GEMINI_ASK_MODEL.trim() === ''
+  ) {
     throw new Error('GEMINI_ASK_MODEL environment variable is required');
   }
 
@@ -44,15 +56,15 @@ async function initializeServices() {
   const minSimilarity = parseFloat(process.env.RAG_MIN_SIMILARITY);
   const port = parseInt(process.env.PORT, 10);
 
-  if (isNaN(nResults) || nResults <= 0) {
+  if (Number.isNaN(nResults) || nResults <= 0) {
     throw new Error('RAG_N_RESULTS must be a positive number');
   }
 
-  if (isNaN(minSimilarity) || minSimilarity < 0 || minSimilarity > 1) {
+  if (Number.isNaN(minSimilarity) || minSimilarity < 0 || minSimilarity > 1) {
     throw new Error('RAG_MIN_SIMILARITY must be a number between 0 and 1');
   }
 
-  if (isNaN(port) || port <= 0) {
+  if (Number.isNaN(port) || port <= 0) {
     throw new Error('PORT must be a valid positive number');
   }
 
@@ -71,10 +83,15 @@ async function initializeServices() {
     modelName: process.env.GEMINI_ASK_MODEL,
   });
 
-  const ragService = MyCustomRAGService.create(vectorDB, embeddingService, askingService, {
-    nResults,
-    minSimilarity,
-  });
+  const ragService = MyCustomRAGService.create(
+    vectorDB,
+    embeddingService,
+    askingService,
+    {
+      nResults,
+      minSimilarity,
+    },
+  );
 
   logger.info('✓ All services initialized successfully');
 
@@ -93,7 +110,10 @@ async function startServer() {
       logger.info(`  GET  /health      - Health check`);
     });
   } catch (error) {
-    logger.error('Failed to start server', error instanceof Error ? error : undefined);
+    logger.error(
+      'Failed to start server',
+      error instanceof Error ? error : undefined,
+    );
     process.exit(1);
   }
 }

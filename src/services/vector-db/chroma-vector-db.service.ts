@@ -1,18 +1,15 @@
-import { ChromaClient, Collection } from 'chromadb';
-import {
+import { ChromaClient, type Collection } from 'chromadb';
+import { logger } from '../../utils/logger';
+import type {
+  DocumentInfo,
+  QueryMatch,
+  StoredDocument,
   VectorDBService,
   VectorDocument,
-  StoredDocument,
-  QueryMatch,
-  DocumentInfo,
 } from './vector-db.interface';
-import { logger } from '../../utils/logger';
 
 export interface ChromaDBConfig {
-  /** ChromaDB server URL (e.g., http://localhost:8000) */
   chromaUrl: string;
-
-  /** Name of the collection to use */
   collectionName: string;
 }
 
@@ -21,7 +18,11 @@ export class ChromaVectorDBService implements VectorDBService {
   private collection: Collection;
   private collectionName: string;
 
-  private constructor(client: ChromaClient, collection: Collection, collectionName: string) {
+  private constructor(
+    client: ChromaClient,
+    collection: Collection,
+    collectionName: string,
+  ) {
     this.client = client;
     this.collection = collection;
     this.collectionName = collectionName;
@@ -44,11 +45,13 @@ export class ChromaVectorDBService implements VectorDBService {
 
     const url = new URL(chromaUrl);
     if (!url.port) {
-      throw new Error('chromaUrl must include a port (e.g., http://localhost:8000)');
+      throw new Error(
+        'chromaUrl must include a port (e.g., http://localhost:8000)',
+      );
     }
 
     const port = parseInt(url.port, 10);
-    if (isNaN(port)) {
+    if (Number.isNaN(port)) {
       throw new Error('chromaUrl port must be a valid number');
     }
 
@@ -58,7 +61,6 @@ export class ChromaVectorDBService implements VectorDBService {
     });
 
     try {
-      // Get or create collection with cosine distance metric
       const collection = await client.getOrCreateCollection({
         name: collectionName,
         metadata: ChromaVectorDBService.getCollectionMetadata(),
@@ -67,7 +69,10 @@ export class ChromaVectorDBService implements VectorDBService {
 
       return new ChromaVectorDBService(client, collection, collectionName);
     } catch (error) {
-      logger.error('Failed to initialize ChromaDB', error instanceof Error ? error : undefined);
+      logger.error(
+        'Failed to initialize ChromaDB',
+        error instanceof Error ? error : undefined,
+      );
       throw error;
     }
   }
@@ -108,7 +113,11 @@ export class ChromaVectorDBService implements VectorDBService {
     });
   }
 
-  async query(queryEmbedding: number[], nResults: number, minSimilarity: number): Promise<QueryMatch[]> {
+  async query(
+    queryEmbedding: number[],
+    nResults: number,
+    minSimilarity: number,
+  ): Promise<QueryMatch[]> {
     if (minSimilarity < 0 || minSimilarity > 1) {
       throw new Error('minSimilarity must be between 0 and 1');
     }
@@ -120,7 +129,12 @@ export class ChromaVectorDBService implements VectorDBService {
 
     const matches: QueryMatch[] = [];
 
-    if (results.ids[0] && results.documents[0] && results.metadatas[0] && results.distances[0]) {
+    if (
+      results.ids[0] &&
+      results.documents[0] &&
+      results.metadatas[0] &&
+      results.distances[0]
+    ) {
       for (let i = 0; i < results.ids[0].length; i++) {
         const id = results.ids[0][i];
         const document = results.documents[0][i];
@@ -150,7 +164,11 @@ export class ChromaVectorDBService implements VectorDBService {
       ids: [id],
     });
 
-    if (results.ids.length === 0 || !results.documents[0] || !results.metadatas[0]) {
+    if (
+      results.ids.length === 0 ||
+      !results.documents[0] ||
+      !results.metadatas[0]
+    ) {
       return null;
     }
 
@@ -187,7 +205,6 @@ export class ChromaVectorDBService implements VectorDBService {
     await this.client.deleteCollection({ name: this.collectionName });
     logger.info(`✓ Collection '${this.collectionName}' deleted`);
 
-    // Recreate the collection so the service remains usable
     this.collection = await this.client.createCollection({
       name: this.collectionName,
       metadata: ChromaVectorDBService.getCollectionMetadata(),

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { ParagraphSentenceChunker } from './paragraph-sentence-chunker';
 
 describe('ParagraphSentenceChunker', () => {
@@ -179,7 +179,8 @@ describe('ParagraphSentenceChunker', () => {
 
   describe('Sentence splitting', () => {
     it('should split large paragraph by sentences', () => {
-      const text = 'First sentence here. Second sentence here. Third sentence here. Fourth sentence here.';
+      const text =
+        'First sentence here. Second sentence here. Third sentence here. Fourth sentence here.';
       const result = chunker.chunk(text, 30, 5);
 
       expect(result.length).toBeGreaterThan(1);
@@ -209,7 +210,8 @@ describe('ParagraphSentenceChunker', () => {
     });
 
     it('should handle text with no sentence boundaries', () => {
-      const text = 'NoSentenceBoundariesHereJustOneVeryLongWordThatKeepsGoingAndGoingAndGoing';
+      const text =
+        'NoSentenceBoundariesHereJustOneVeryLongWordThatKeepsGoingAndGoingAndGoing';
       const result = chunker.chunk(text, 20, 5);
 
       expect(result.length).toBeGreaterThan(1);

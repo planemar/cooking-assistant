@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import { LLMEmbeddingService } from '../llm.interface';
 import { logger } from '../../../utils/logger';
-import { GeminiModelSpecificConfig } from './gemini.service';
+import type { LLMEmbeddingService } from '../llm.interface';
+import type { GeminiModelSpecificConfig } from './gemini.service';
 
 type GeminiTaskType =
   | 'TASK_TYPE_UNSPECIFIED'
@@ -42,7 +42,10 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
   }
 
   // TODO: max batch size is 100, need to split texts
-  private async embedBatchWithTaskType(texts: string[], taskType: GeminiTaskType): Promise<number[][]> {
+  private async embedBatchWithTaskType(
+    texts: string[],
+    taskType: GeminiTaskType,
+  ): Promise<number[][]> {
     if (texts.length === 0) {
       return [];
     }
@@ -89,7 +92,10 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     return this.embedBatchWithTaskType(texts, 'SEMANTIC_SIMILARITY');
   }
 
-  private async embedWithTaskType(text: string, taskType: GeminiTaskType): Promise<number[]> {
+  private async embedWithTaskType(
+    text: string,
+    taskType: GeminiTaskType,
+  ): Promise<number[]> {
     const res = await this.embedBatchWithTaskType([text], taskType);
     if (res.length === 0) {
       throw new Error('No embeddings returned from Gemini API');

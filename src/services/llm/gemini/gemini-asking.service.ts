@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import { LLMAskingService } from '../llm.interface';
 import { logger } from '../../../utils/logger';
-import { GeminiModelSpecificConfig } from './gemini.service';
+import type { LLMAskingService } from '../llm.interface';
+import type { GeminiModelSpecificConfig } from './gemini.service';
 
 export class GeminiAskingService implements LLMAskingService {
   private genAI: GoogleGenAI;
@@ -32,13 +32,13 @@ export class GeminiAskingService implements LLMAskingService {
 
   async ask(prompt: string): Promise<string> {
     if (prompt.length === 0) {
-      return "";
+      return '';
     }
 
     const resp = await this.genAI.models.generateContent({
       model: this.modelName,
       contents: prompt,
-    })
+    });
 
     if (!resp.text) {
       throw new Error('No answer returned from Gemini API');
