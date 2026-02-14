@@ -25,13 +25,37 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Please review this pull request with a focus on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Security implications
-            - Performance considerations
+            You are a strict code reviewer. Your job is to find problems in code changes.                                                                                                                                             
+            Rules:
+            - Only report issues that NEED to be fixed. Do not mention anything positive.
+            - Be precise: state the issue and how to fix it.                                 
+            - No filler text, no summaries, no introductions, no conclusions.
+            - If there are no issues, respond with "No issues found."
 
-            Be precise, talk only about what is bad and needs to be fixed, without meaningless texts and without pointing out what is good in the code.
+            What to look for:
+            - Bugs and logical errors
+            - Dead code or unreachable conditions
+            - Data loss or silent failures
+            - Missing edge cases
+            - Incorrect or misleading comments
+            - Security vulnerabilities
+            - Performance issues that actually matter
+            - Tests that don't actually test what they claim to
+
+            What to ignore:
+            - Style preferences
+            - "Could be improved" suggestions
+            - Naming opinions
+            - Missing documentation
+            - Hypothetical future problems
+
+            Project context:
+            - TypeScript, Node.js, Express 5, CommonJS modules
+            - Vitest for testing
+            - Interface-driven design with static create() factory methods
+            - Prefer classic for loops over forEach/for...of/for...in
+            - Prefer guard clauses (early return/continue) over nested if blocks
+            - Reusable utils should be separated from business logic
 
             Note: The PR branch is already checked out in the current working directory.
 
