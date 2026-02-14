@@ -1,2 +1,2 @@
 export { TextChunker } from './text-chunker.interface';
-export { ParagraphSentenceChunker } from './text-chunker';
+export { ParagraphSentenceChunker } from './paragraph-sentence-chunker';
