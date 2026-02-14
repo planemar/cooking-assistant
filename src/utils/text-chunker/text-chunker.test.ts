@@ -50,9 +50,9 @@ describe('ParagraphSentenceChunker', () => {
       expect(result.length).toBeGreaterThan(1);
       // First chunk should contain first paragraph
       expect(result[0]).toContain('a'.repeat(100));
-      // Verify overlap exists (second chunk starts with some of first chunk's end)
+      // Verify overlap exists (second chunk starts with last 80 chars of first chunk)
       const firstChunkEnd = result[0].slice(-80);
-      expect(result[1].startsWith(firstChunkEnd) || result[1].includes('b')).toBe(true);
+      expect(result[1].startsWith(firstChunkEnd)).toBe(true);
     });
 
     it('should respect paragraph boundaries when accumulating chunks', () => {
@@ -66,9 +66,9 @@ describe('ParagraphSentenceChunker', () => {
 
       expect(result.length).toBeGreaterThan(1);
       // Each chunk should not exceed the chunk size significantly (allowing for paragraph boundaries)
-      result.forEach(chunk => {
-        expect(chunk.length).toBeLessThanOrEqual(450); // Allow some tolerance for paragraph boundaries
-      });
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i].length).toBeLessThanOrEqual(450); // Allow some tolerance for paragraph boundaries
+      }
     });
 
     it('should preserve paragraph integrity when possible', () => {
@@ -101,9 +101,9 @@ describe('ParagraphSentenceChunker', () => {
 
       expect(result.length).toBeGreaterThan(1);
       // Each chunk should be around the chunk size
-      result.forEach(chunk => {
-        expect(chunk.length).toBeLessThanOrEqual(600); // Allow some tolerance
-      });
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i].length).toBeLessThanOrEqual(600); // Allow some tolerance
+      }
     });
   });
 
@@ -177,13 +177,13 @@ For the curry sauce:
 
       expect(result.length).toBeGreaterThan(0);
       // Verify no chunk is empty
-      result.forEach(chunk => {
-        expect(chunk.trim().length).toBeGreaterThan(0);
-      });
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i].trim().length).toBeGreaterThan(0);
+      }
       // Verify all chunks are within reasonable size bounds
-      result.forEach(chunk => {
-        expect(chunk.length).toBeLessThanOrEqual(600); // Allow some tolerance
-      });
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i].length).toBeLessThanOrEqual(600); // Allow some tolerance
+      }
     });
   });
 });

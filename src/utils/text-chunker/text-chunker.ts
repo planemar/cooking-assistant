@@ -1,5 +1,8 @@
 import { TextChunker } from './text-chunker.interface';
 
+const PARAGRAPH_SEPARATOR = '\n\n';
+const PARAGRAPH_SPLIT_REGEX = new RegExp(`${PARAGRAPH_SEPARATOR}+`);
+
 export class ParagraphSentenceChunker implements TextChunker {
   chunk(content: string, chunkSize: number, chunkOverlap: number): string[] {
     if (chunkSize <= 0) {
@@ -29,36 +32,37 @@ export class ParagraphSentenceChunker implements TextChunker {
     chunkSize: number,
     chunkOverlap: number
   ): string[] {
-    const paragraphs = content.split(/\n\n+/).filter(p => p.trim().length > 0);
+    const paragraphs = content.split(PARAGRAPH_SPLIT_REGEX).filter(p => p.trim().length > 0);
     const chunks: string[] = [];
-    let i = 0;
+    let currentChunk = '';
 
-    while (i < paragraphs.length) {
-      let currentChunk = '';
+    for (let i = 0; i < paragraphs.length; i++) {
+      const paragraph = paragraphs[i];
 
-      while (i < paragraphs.length) {
-        const nextParagraph = paragraphs[i];
-        const separator = currentChunk.length > 0 ? '\n\n' : '';
-        const potentialChunk = currentChunk + separator + nextParagraph;
+      if (currentChunk.length === 0 && paragraph.length > chunkSize) {
+        chunks.push(...this.splitLargeParagraph(paragraph, chunkSize));
+        continue;
+      }
 
-        if (currentChunk.length === 0 && nextParagraph.length > chunkSize) {
-          const sentenceChunks = this.splitLargeParagraph(nextParagraph, chunkSize);
-          chunks.push(...sentenceChunks);
-          i++;
-          break;
-        }
+      const separator = currentChunk.length > 0 ? PARAGRAPH_SEPARATOR : '';
+      const potentialChunk = currentChunk + separator + paragraph;
 
-        if (potentialChunk.length > chunkSize && currentChunk.length > 0) {
-          break;
-        }
-
+      if (potentialChunk.length <= chunkSize || currentChunk.length === 0) {
         currentChunk = potentialChunk;
-        i++;
+        continue;
       }
 
-      if (currentChunk.length > 0) {
-        chunks.push(currentChunk);
+      chunks.push(currentChunk);
+      if (paragraph.length > chunkSize) {
+        chunks.push(...this.splitLargeParagraph(paragraph, chunkSize));
+        currentChunk = '';
+      } else {
+        currentChunk = paragraph;
       }
+    }
+
+    if (currentChunk.length > 0) {
+      chunks.push(currentChunk);
     }
 
     if (chunkOverlap > 0 && chunks.length > 1) {
@@ -69,36 +73,7 @@ export class ParagraphSentenceChunker implements TextChunker {
   }
 
   private splitLargeParagraph(paragraph: string, chunkSize: number): string[] {
-    const sentences: string[] = [];
-    let currentSentence = '';
-
-    for (let i = 0; i < paragraph.length; i++) {
-      currentSentence += paragraph[i];
-
-      if (i < paragraph.length - 1) {
-        const char = paragraph[i];
-        const nextChar = paragraph[i + 1];
-
-        if (['.', '?', '!'].includes(char)) {
-          if (nextChar === ' ' || nextChar === '\n') {
-            let j = i + 1;
-            while (j < paragraph.length && (paragraph[j] === ' ' || paragraph[j] === '\n')) {
-              currentSentence += paragraph[j];
-              j++;
-            }
-            if (j < paragraph.length && /[A-Z]/.test(paragraph[j])) {
-              sentences.push(currentSentence);
-              currentSentence = '';
-              i = j - 1;
-            }
-          }
-        }
-      }
-    }
-
-    if (currentSentence.trim().length > 0) {
-      sentences.push(currentSentence);
-    }
+    const sentences = paragraph.split(/(?<=[.!?])\s+(?=[A-Z])/);
 
     if (sentences.length === 0) {
       sentences.push(paragraph);
@@ -107,24 +82,25 @@ export class ParagraphSentenceChunker implements TextChunker {
     const chunks: string[] = [];
     let currentChunk = '';
 
-    for (const sentence of sentences) {
-      if (sentence.length > chunkSize) {
+    for (let i = 0; i < sentences.length; i++) {
+      if (sentences[i].length > chunkSize) {
         if (currentChunk.length > 0) {
           chunks.push(currentChunk);
           currentChunk = '';
         }
-        const hardChunks = this.hardSplitText(sentence, chunkSize);
+        const hardChunks = this.hardSplitText(sentences[i], chunkSize);
         chunks.push(...hardChunks);
         continue;
       }
 
-      const potentialChunk = currentChunk + sentence;
-      if (potentialChunk.length > chunkSize && currentChunk.length > 0) {
-        chunks.push(currentChunk);
-        currentChunk = sentence;
-      } else {
+      const potentialChunk = currentChunk + sentences[i];
+      if (potentialChunk.length <= chunkSize || currentChunk.length === 0) {
         currentChunk = potentialChunk;
+        continue;
       }
+
+      chunks.push(currentChunk);
+      currentChunk = sentences[i];
     }
 
     if (currentChunk.length > 0) {
@@ -150,7 +126,8 @@ export class ParagraphSentenceChunker implements TextChunker {
 
       if (i > 0) {
         const previousChunk = chunks[i - 1];
-        const overlapText = previousChunk.slice(-overlap);
+        const actualOverlap = Math.min(overlap, previousChunk.length);
+        const overlapText = previousChunk.slice(-actualOverlap);
         chunkText = overlapText + chunkText;
       }
 
