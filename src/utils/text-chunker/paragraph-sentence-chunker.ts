@@ -1,6 +1,6 @@
-import type { TextChunker } from "./text-chunker.interface";
+import type { TextChunker } from './text-chunker.interface';
 
-const PARAGRAPH_SEPARATOR = "\n\n";
+const PARAGRAPH_SEPARATOR = '\n\n';
 const PARAGRAPH_SPLIT_REGEX = new RegExp(`${PARAGRAPH_SEPARATOR}+`);
 const SENTENCE_SPLIT_REGEX = /(?<=[.!?])\s+(?=[A-Za-z])/;
 
@@ -16,13 +16,13 @@ const SENTENCE_SPLIT_REGEX = /(?<=[.!?])\s+(?=[A-Za-z])/;
 export class ParagraphSentenceChunker implements TextChunker {
   chunk(content: string, chunkSize: number, chunkOverlap: number): string[] {
     if (chunkSize <= 0) {
-      throw new Error("Chunk size must be greater than 0");
+      throw new Error('Chunk size must be greater than 0');
     }
     if (chunkOverlap >= chunkSize) {
-      throw new Error("Chunk overlap must be less than chunk size");
+      throw new Error('Chunk overlap must be less than chunk size');
     }
     if (chunkOverlap < 0) {
-      throw new Error("Chunk overlap must be non-negative");
+      throw new Error('Chunk overlap must be non-negative');
     }
 
     const trimmedContent = content.trim();
@@ -50,7 +50,7 @@ export class ParagraphSentenceChunker implements TextChunker {
       .split(PARAGRAPH_SPLIT_REGEX)
       .filter((p) => p.trim().length > 0);
     const chunks: string[] = [];
-    let currentChunk = "";
+    let currentChunk = '';
 
     for (let i = 0; i < paragraphs.length; i++) {
       const paragraph = paragraphs[i];
@@ -60,7 +60,7 @@ export class ParagraphSentenceChunker implements TextChunker {
         continue;
       }
 
-      const separator = currentChunk.length > 0 ? PARAGRAPH_SEPARATOR : "";
+      const separator = currentChunk.length > 0 ? PARAGRAPH_SEPARATOR : '';
       const potentialChunk = currentChunk + separator + paragraph;
 
       if (potentialChunk.length <= chunkSize || currentChunk.length === 0) {
@@ -71,7 +71,7 @@ export class ParagraphSentenceChunker implements TextChunker {
       chunks.push(currentChunk);
       if (paragraph.length > chunkSize) {
         chunks.push(...this.splitLargeParagraph(paragraph, chunkSize));
-        currentChunk = "";
+        currentChunk = '';
       } else {
         currentChunk = paragraph;
       }
@@ -91,13 +91,13 @@ export class ParagraphSentenceChunker implements TextChunker {
   private splitLargeParagraph(paragraph: string, chunkSize: number): string[] {
     const sentences = paragraph.split(SENTENCE_SPLIT_REGEX);
     const chunks: string[] = [];
-    let currentChunk = "";
+    let currentChunk = '';
 
     for (let i = 0; i < sentences.length; i++) {
       if (sentences[i].length > chunkSize) {
         if (currentChunk.length > 0) {
           chunks.push(currentChunk);
-          currentChunk = "";
+          currentChunk = '';
         }
         const hardChunks = this.hardSplitText(sentences[i], chunkSize);
         chunks.push(...hardChunks);

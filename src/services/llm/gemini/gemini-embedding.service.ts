@@ -1,18 +1,18 @@
-import { GoogleGenAI } from "@google/genai";
-import { logger } from "../../../utils/logger";
-import type { LLMEmbeddingService } from "../llm.interface";
-import type { GeminiModelSpecificConfig } from "./gemini.service";
+import { GoogleGenAI } from '@google/genai';
+import { logger } from '../../../utils/logger';
+import type { LLMEmbeddingService } from '../llm.interface';
+import type { GeminiModelSpecificConfig } from './gemini.service';
 
 type GeminiTaskType =
-  | "TASK_TYPE_UNSPECIFIED"
-  | "RETRIEVAL_QUERY"
-  | "RETRIEVAL_DOCUMENT"
-  | "SEMANTIC_SIMILARITY"
-  | "CLASSIFICATION"
-  | "CLUSTERING"
-  | "QUESTION_ANSWERING"
-  | "FACT_VERIFICATION"
-  | "CODE_RETRIEVAL_QUERY";
+  | 'TASK_TYPE_UNSPECIFIED'
+  | 'RETRIEVAL_QUERY'
+  | 'RETRIEVAL_DOCUMENT'
+  | 'SEMANTIC_SIMILARITY'
+  | 'CLASSIFICATION'
+  | 'CLUSTERING'
+  | 'QUESTION_ANSWERING'
+  | 'FACT_VERIFICATION'
+  | 'CODE_RETRIEVAL_QUERY';
 
 export class GeminiEmbeddingService implements LLMEmbeddingService {
   private genAI: GoogleGenAI;
@@ -26,17 +26,17 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
   static create(config: GeminiModelSpecificConfig): LLMEmbeddingService {
     const { apiKey, modelName } = config;
 
-    if (!apiKey || apiKey.trim() === "") {
-      throw new Error("apiKey is required and cannot be empty");
+    if (!apiKey || apiKey.trim() === '') {
+      throw new Error('apiKey is required and cannot be empty');
     }
 
-    if (!modelName || modelName.trim() === "") {
-      throw new Error("modelName is required and cannot be empty");
+    if (!modelName || modelName.trim() === '') {
+      throw new Error('modelName is required and cannot be empty');
     }
 
     const genAI = new GoogleGenAI({ apiKey });
 
-    logger.info("✓ Initialized Gemini embedding service");
+    logger.info('✓ Initialized Gemini embedding service');
 
     return new GeminiEmbeddingService(genAI, modelName);
   }
@@ -51,7 +51,7 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     }
 
     for (let i = 0; i < texts.length; i++) {
-      if (!texts[i] || texts[i].trim() === "") {
+      if (!texts[i] || texts[i].trim() === '') {
         throw new Error(`text at index ${i} is required and cannot be empty`);
       }
     }
@@ -65,31 +65,31 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     });
 
     if (!resp.embeddings) {
-      throw new Error("No embeddings returned from Gemini API");
+      throw new Error('No embeddings returned from Gemini API');
     }
 
     return resp.embeddings.map((embedding) => {
       if (!embedding.values) {
-        throw new Error("Embedding values are undefined");
+        throw new Error('Embedding values are undefined');
       }
       return embedding.values;
     });
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {
-    return this.embedBatchWithTaskType(texts, "TASK_TYPE_UNSPECIFIED");
+    return this.embedBatchWithTaskType(texts, 'TASK_TYPE_UNSPECIFIED');
   }
 
   async embedBatchRetrievalDocument(texts: string[]): Promise<number[][]> {
-    return this.embedBatchWithTaskType(texts, "RETRIEVAL_DOCUMENT");
+    return this.embedBatchWithTaskType(texts, 'RETRIEVAL_DOCUMENT');
   }
 
   async embedBatchRetrievalQuery(texts: string[]): Promise<number[][]> {
-    return this.embedBatchWithTaskType(texts, "RETRIEVAL_QUERY");
+    return this.embedBatchWithTaskType(texts, 'RETRIEVAL_QUERY');
   }
 
   async embedBatchSemanticSimilarity(texts: string[]): Promise<number[][]> {
-    return this.embedBatchWithTaskType(texts, "SEMANTIC_SIMILARITY");
+    return this.embedBatchWithTaskType(texts, 'SEMANTIC_SIMILARITY');
   }
 
   private async embedWithTaskType(
@@ -98,25 +98,25 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
   ): Promise<number[]> {
     const res = await this.embedBatchWithTaskType([text], taskType);
     if (res.length === 0) {
-      throw new Error("No embeddings returned from Gemini API");
+      throw new Error('No embeddings returned from Gemini API');
     }
 
     return res[0];
   }
 
   async embed(text: string): Promise<number[]> {
-    return this.embedWithTaskType(text, "TASK_TYPE_UNSPECIFIED");
+    return this.embedWithTaskType(text, 'TASK_TYPE_UNSPECIFIED');
   }
 
   async embedRetrievalQuery(text: string): Promise<number[]> {
-    return this.embedWithTaskType(text, "RETRIEVAL_QUERY");
+    return this.embedWithTaskType(text, 'RETRIEVAL_QUERY');
   }
 
   async embedRetrievalDocument(text: string): Promise<number[]> {
-    return this.embedWithTaskType(text, "RETRIEVAL_DOCUMENT");
+    return this.embedWithTaskType(text, 'RETRIEVAL_DOCUMENT');
   }
 
   async embedSemanticSimilarity(text: string): Promise<number[]> {
-    return this.embedWithTaskType(text, "SEMANTIC_SIMILARITY");
+    return this.embedWithTaskType(text, 'SEMANTIC_SIMILARITY');
   }
 }

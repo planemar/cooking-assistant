@@ -1,12 +1,12 @@
-import { ChromaClient, type Collection } from "chromadb";
-import { logger } from "../../utils/logger";
+import { ChromaClient, type Collection } from 'chromadb';
+import { logger } from '../../utils/logger';
 import type {
   DocumentInfo,
   QueryMatch,
   StoredDocument,
   VectorDBService,
   VectorDocument,
-} from "./vector-db.interface";
+} from './vector-db.interface';
 
 export interface ChromaDBConfig {
   chromaUrl: string;
@@ -29,30 +29,30 @@ export class ChromaVectorDBService implements VectorDBService {
   }
 
   private static getCollectionMetadata() {
-    return { "hnsw:space": "cosine" };
+    return { 'hnsw:space': 'cosine' };
   }
 
   static async create(config: ChromaDBConfig): Promise<VectorDBService> {
     const { collectionName, chromaUrl } = config;
 
-    if (!collectionName || collectionName.trim() === "") {
-      throw new Error("collectionName is required and cannot be empty");
+    if (!collectionName || collectionName.trim() === '') {
+      throw new Error('collectionName is required and cannot be empty');
     }
 
-    if (!chromaUrl || chromaUrl.trim() === "") {
-      throw new Error("chromaUrl is required and cannot be empty");
+    if (!chromaUrl || chromaUrl.trim() === '') {
+      throw new Error('chromaUrl is required and cannot be empty');
     }
 
     const url = new URL(chromaUrl);
     if (!url.port) {
       throw new Error(
-        "chromaUrl must include a port (e.g., http://localhost:8000)",
+        'chromaUrl must include a port (e.g., http://localhost:8000)',
       );
     }
 
     const port = parseInt(url.port, 10);
     if (Number.isNaN(port)) {
-      throw new Error("chromaUrl port must be a valid number");
+      throw new Error('chromaUrl port must be a valid number');
     }
 
     const client = new ChromaClient({
@@ -70,7 +70,7 @@ export class ChromaVectorDBService implements VectorDBService {
       return new ChromaVectorDBService(client, collection, collectionName);
     } catch (error) {
       logger.error(
-        "Failed to initialize ChromaDB",
+        'Failed to initialize ChromaDB',
         error instanceof Error ? error : undefined,
       );
       throw error;
@@ -119,7 +119,7 @@ export class ChromaVectorDBService implements VectorDBService {
     minSimilarity: number,
   ): Promise<QueryMatch[]> {
     if (minSimilarity < 0 || minSimilarity > 1) {
-      throw new Error("minSimilarity must be between 0 and 1");
+      throw new Error('minSimilarity must be between 0 and 1');
     }
 
     const results = await this.collection.query({
@@ -181,7 +181,7 @@ export class ChromaVectorDBService implements VectorDBService {
 
   async getAllDocumentInfo(): Promise<DocumentInfo[]> {
     const results = await this.collection.get({
-      include: ["metadatas"],
+      include: ['metadatas'],
     });
 
     const documentInfos: DocumentInfo[] = [];

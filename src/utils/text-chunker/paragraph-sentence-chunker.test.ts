@@ -1,41 +1,41 @@
-import { describe, expect, it } from "vitest";
-import { ParagraphSentenceChunker } from "./paragraph-sentence-chunker";
+import { describe, expect, it } from 'vitest';
+import { ParagraphSentenceChunker } from './paragraph-sentence-chunker';
 
-describe("ParagraphSentenceChunker", () => {
+describe('ParagraphSentenceChunker', () => {
   const chunker = new ParagraphSentenceChunker();
 
-  describe("Small content and edge cases", () => {
-    it("should return 1 chunk when content is below chunk size", () => {
-      const input = "Hello world";
+  describe('Small content and edge cases', () => {
+    it('should return 1 chunk when content is below chunk size', () => {
+      const input = 'Hello world';
       const result = chunker.chunk(input, 500, 100);
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toBe("Hello world");
+      expect(result[0]).toBe('Hello world');
     });
 
-    it("should return 1 chunk when content is exactly at chunk size", () => {
-      const input = "a".repeat(500);
+    it('should return 1 chunk when content is exactly at chunk size', () => {
+      const input = 'a'.repeat(500);
       const result = chunker.chunk(input, 500, 100);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toBe(input);
     });
 
-    it("should return empty array for empty content", () => {
-      expect(chunker.chunk("", 500, 100)).toEqual([]);
-      expect(chunker.chunk("   ", 500, 100)).toEqual([]);
-      expect(chunker.chunk("\n\n", 500, 100)).toEqual([]);
+    it('should return empty array for empty content', () => {
+      expect(chunker.chunk('', 500, 100)).toEqual([]);
+      expect(chunker.chunk('   ', 500, 100)).toEqual([]);
+      expect(chunker.chunk('\n\n', 500, 100)).toEqual([]);
     });
 
-    it("should handle single character content", () => {
-      const result = chunker.chunk("X", 100, 10);
+    it('should handle single character content', () => {
+      const result = chunker.chunk('X', 100, 10);
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toBe("X");
+      expect(result[0]).toBe('X');
     });
 
-    it("should handle very large chunk size", () => {
-      const input = "Short text here";
+    it('should handle very large chunk size', () => {
+      const input = 'Short text here';
       const result = chunker.chunk(input, 10000, 50);
 
       expect(result).toHaveLength(1);
@@ -43,29 +43,29 @@ describe("ParagraphSentenceChunker", () => {
     });
   });
 
-  describe("Error handling", () => {
-    it("should throw error when overlap >= chunk size", () => {
-      expect(() => chunker.chunk("test", 100, 100)).toThrow();
-      expect(() => chunker.chunk("test", 100, 150)).toThrow();
+  describe('Error handling', () => {
+    it('should throw error when overlap >= chunk size', () => {
+      expect(() => chunker.chunk('test', 100, 100)).toThrow();
+      expect(() => chunker.chunk('test', 100, 150)).toThrow();
     });
 
-    it("should throw error when chunk size is 0 or negative", () => {
-      expect(() => chunker.chunk("test", 0, 0)).toThrow();
-      expect(() => chunker.chunk("test", -100, 0)).toThrow();
+    it('should throw error when chunk size is 0 or negative', () => {
+      expect(() => chunker.chunk('test', 0, 0)).toThrow();
+      expect(() => chunker.chunk('test', -100, 0)).toThrow();
     });
 
-    it("should throw error when overlap is negative", () => {
-      expect(() => chunker.chunk("test", 100, -10)).toThrow();
+    it('should throw error when overlap is negative', () => {
+      expect(() => chunker.chunk('test', 100, -10)).toThrow();
     });
   });
 
-  describe("Paragraph-aware splitting", () => {
-    it("should split paragraphs and respect boundaries", () => {
-      const para1 = "a".repeat(150);
-      const para2 = "b".repeat(150);
-      const para3 = "c".repeat(150);
-      const para4 = "d".repeat(150);
-      const para5 = "e".repeat(150);
+  describe('Paragraph-aware splitting', () => {
+    it('should split paragraphs and respect boundaries', () => {
+      const para1 = 'a'.repeat(150);
+      const para2 = 'b'.repeat(150);
+      const para3 = 'c'.repeat(150);
+      const para4 = 'd'.repeat(150);
+      const para5 = 'e'.repeat(150);
       const input = `${para1}\n\n${para2}\n\n${para3}\n\n${para4}\n\n${para5}`;
       const result = chunker.chunk(input, 400, 80);
 
@@ -75,22 +75,22 @@ describe("ParagraphSentenceChunker", () => {
       }
     });
 
-    it("should preserve paragraph integrity when possible", () => {
-      const para1 = "a".repeat(200);
-      const para2 = "b".repeat(300);
-      const para3 = "c".repeat(400);
+    it('should preserve paragraph integrity when possible', () => {
+      const para1 = 'a'.repeat(200);
+      const para2 = 'b'.repeat(300);
+      const para3 = 'c'.repeat(400);
       const input = `${para1}\n\n${para2}\n\n${para3}`;
       const result = chunker.chunk(input, 600, 100);
 
-      expect(result[0]).toContain("a".repeat(100));
-      expect(result[0]).toContain("b".repeat(100));
+      expect(result[0]).toContain('a'.repeat(100));
+      expect(result[0]).toContain('b'.repeat(100));
       expect(result.length).toBeGreaterThan(0);
     });
   });
 
-  describe("Overlap behavior", () => {
-    it("should add overlap between chunks", () => {
-      const text = "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIII";
+  describe('Overlap behavior', () => {
+    it('should add overlap between chunks', () => {
+      const text = 'AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIII';
       const result = chunker.chunk(text, 15, 5);
 
       expect(result.length).toBeGreaterThan(1);
@@ -110,8 +110,8 @@ describe("ParagraphSentenceChunker", () => {
       }
     });
 
-    it("should preserve all data with overlap", () => {
-      const text = "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIII";
+    it('should preserve all data with overlap', () => {
+      const text = 'AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIII';
       const result = chunker.chunk(text, 15, 5);
 
       // Reconstruct by removing overlap from each chunk
@@ -123,8 +123,8 @@ describe("ParagraphSentenceChunker", () => {
       expect(reconstructed).toBe(text);
     });
 
-    it("should handle overlap when chunk is shorter than overlap size", () => {
-      const text = "AAA\n\nBBBBBBBBBB\n\nCCCCCCCCCC";
+    it('should handle overlap when chunk is shorter than overlap size', () => {
+      const text = 'AAA\n\nBBBBBBBBBB\n\nCCCCCCCCCC';
       const result = chunker.chunk(text, 15, 10);
 
       expect(result.length).toBeGreaterThan(1);
@@ -138,35 +138,35 @@ describe("ParagraphSentenceChunker", () => {
       }
     });
 
-    it("should create chunks with no overlap when overlap is 0", () => {
-      const input = "a".repeat(2000);
+    it('should create chunks with no overlap when overlap is 0', () => {
+      const input = 'a'.repeat(2000);
       const result = chunker.chunk(input, 500, 0);
 
       expect(result.length).toBe(4);
-      const reconstructed = result.join("");
+      const reconstructed = result.join('');
       expect(reconstructed).toBe(input);
     });
   });
 
-  describe("Hard split fallback", () => {
-    it("should split text with no natural boundaries", () => {
-      const text = "A".repeat(100);
+  describe('Hard split fallback', () => {
+    it('should split text with no natural boundaries', () => {
+      const text = 'A'.repeat(100);
       const result = chunker.chunk(text, 25, 0);
 
       expect(result).toHaveLength(4);
-      expect(result[0]).toBe("A".repeat(25));
-      expect(result[1]).toBe("A".repeat(25));
-      expect(result[2]).toBe("A".repeat(25));
-      expect(result[3]).toBe("A".repeat(25));
+      expect(result[0]).toBe('A'.repeat(25));
+      expect(result[1]).toBe('A'.repeat(25));
+      expect(result[2]).toBe('A'.repeat(25));
+      expect(result[3]).toBe('A'.repeat(25));
     });
 
-    it("should handle hard split with overlap", () => {
-      const text = "a".repeat(2000);
+    it('should handle hard split with overlap', () => {
+      const text = 'a'.repeat(2000);
       const result = chunker.chunk(text, 500, 100);
 
       expect(result.length).toBeGreaterThan(1);
-      expect(result[0]).toBe("a".repeat(500));
-      expect(result[1].startsWith("a".repeat(100))).toBe(true);
+      expect(result[0]).toBe('a'.repeat(500));
+      expect(result[1].startsWith('a'.repeat(100))).toBe(true);
 
       // Verify no data loss
       let reconstructed = result[0];
@@ -177,10 +177,10 @@ describe("ParagraphSentenceChunker", () => {
     });
   });
 
-  describe("Sentence splitting", () => {
-    it("should split large paragraph by sentences", () => {
+  describe('Sentence splitting', () => {
+    it('should split large paragraph by sentences', () => {
       const text =
-        "First sentence here. Second sentence here. Third sentence here. Fourth sentence here.";
+        'First sentence here. Second sentence here. Third sentence here. Fourth sentence here.';
       const result = chunker.chunk(text, 30, 5);
 
       expect(result.length).toBeGreaterThan(1);
@@ -189,29 +189,29 @@ describe("ParagraphSentenceChunker", () => {
       }
     });
 
-    it("should preserve different sentence endings", () => {
-      const text = "First sentence! Second sentence? Third sentence.";
+    it('should preserve different sentence endings', () => {
+      const text = 'First sentence! Second sentence? Third sentence.';
       const result = chunker.chunk(text, 20, 3);
 
-      const combined = result.join("");
-      expect(combined).toContain("First sentence!");
-      expect(combined).toContain("Second sentence?");
-      expect(combined).toContain("Third sentence.");
+      const combined = result.join('');
+      expect(combined).toContain('First sentence!');
+      expect(combined).toContain('Second sentence?');
+      expect(combined).toContain('Third sentence.');
     });
 
-    it("should split sentences starting with lowercase", () => {
-      const text = "Mix well. then add salt. and stir thoroughly.";
+    it('should split sentences starting with lowercase', () => {
+      const text = 'Mix well. then add salt. and stir thoroughly.';
       const result = chunker.chunk(text, 20, 3);
 
       expect(result.length).toBeGreaterThan(1);
-      const combined = result.join("");
-      expect(combined).toContain("Mix well.");
-      expect(combined).toContain("then add salt.");
+      const combined = result.join('');
+      expect(combined).toContain('Mix well.');
+      expect(combined).toContain('then add salt.');
     });
 
-    it("should handle text with no sentence boundaries", () => {
+    it('should handle text with no sentence boundaries', () => {
       const text =
-        "NoSentenceBoundariesHereJustOneVeryLongWordThatKeepsGoingAndGoingAndGoing";
+        'NoSentenceBoundariesHereJustOneVeryLongWordThatKeepsGoingAndGoingAndGoing';
       const result = chunker.chunk(text, 20, 5);
 
       expect(result.length).toBeGreaterThan(1);
@@ -226,8 +226,8 @@ describe("ParagraphSentenceChunker", () => {
     });
   });
 
-  describe("Real recipe content", () => {
-    it("should handle real recipe text correctly", () => {
+  describe('Real recipe content', () => {
+    it('should handle real recipe text correctly', () => {
       const recipe = `Chicken Katsu Curry is a Japanese-inspired comfort food classic.
 
 This recipe combines crispy breaded chicken cutlets with a rich, mildly spiced curry sauce.

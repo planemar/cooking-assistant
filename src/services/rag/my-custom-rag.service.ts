@@ -1,7 +1,7 @@
-import { logger } from "../../utils/logger";
-import type { LLMAskingService, LLMEmbeddingService } from "../llm";
-import type { VectorDBService } from "../vector-db";
-import type { RAGService } from "./rag.interface";
+import { logger } from '../../utils/logger';
+import type { LLMAskingService, LLMEmbeddingService } from '../llm';
+import type { VectorDBService } from '../vector-db';
+import type { RAGService } from './rag.interface';
 
 const PROMPT_TEMPLATE = `You are a helpful cooking assistant that answers questions based on the provided recipes.
 
@@ -19,7 +19,7 @@ Instructions:
 Answer:`;
 
 const NO_RESULTS_MESSAGE =
-  "I could not find any relevant information in the cookbook to answer your question.";
+  'I could not find any relevant information in the cookbook to answer your question.';
 
 export interface MyCustomRAGConfig {
   nResults: number;
@@ -56,14 +56,14 @@ export class MyCustomRAGService implements RAGService {
     const { nResults, minSimilarity } = config;
 
     if (nResults <= 0) {
-      throw new Error("nResults must be greater than 0");
+      throw new Error('nResults must be greater than 0');
     }
 
     if (minSimilarity < 0 || minSimilarity > 1) {
-      throw new Error("minSimilarity must be between 0 and 1");
+      throw new Error('minSimilarity must be between 0 and 1');
     }
 
-    logger.info("✓ Initialized RAG service with model");
+    logger.info('✓ Initialized RAG service with model');
 
     return new MyCustomRAGService(
       vectorDB,
@@ -75,8 +75,8 @@ export class MyCustomRAGService implements RAGService {
   }
 
   async ask(question: string): Promise<string> {
-    if (!question || question.trim() === "") {
-      throw new Error("question is required and cannot be empty");
+    if (!question || question.trim() === '') {
+      throw new Error('question is required and cannot be empty');
     }
 
     const questionEmbedding =
@@ -100,7 +100,7 @@ export class MyCustomRAGService implements RAGService {
         (match, index) =>
           `[Document ${index + 1}] (Similarity: ${match.similarity.toFixed(2)})\n${match.document}`,
       )
-      .join("\n\n");
+      .join('\n\n');
 
     const prompt = this.buildPrompt(question, context);
     const answer = await this.askingService.ask(prompt);
@@ -109,8 +109,8 @@ export class MyCustomRAGService implements RAGService {
   }
 
   private buildPrompt(question: string, context: string): string {
-    return PROMPT_TEMPLATE.replace("{context}", context).replace(
-      "{question}",
+    return PROMPT_TEMPLATE.replace('{context}', context).replace(
+      '{question}',
       question,
     );
   }
