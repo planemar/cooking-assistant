@@ -60,10 +60,10 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
       VALUES (?, ?, ?, ?, ?)
     `);
 
-    const ids: number[] = [];
-
     const insertMany = this.db.transaction(
       (parentsToInsert: Omit<ParentChunkDocument, 'id'>[]) => {
+        const ids: number[] = [];
+
         for (let i = 0; i < parentsToInsert.length; i++) {
           const parent = parentsToInsert[i];
           const result = stmt.run(
@@ -75,10 +75,12 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
           );
           ids.push(result.lastInsertRowid as number);
         }
+
+        return ids;
       },
     );
 
-    insertMany(parents);
+    const ids = insertMany(parents);
 
     logger.debug(`Inserted ${parents.length} parent chunks`);
 
