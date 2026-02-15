@@ -320,15 +320,6 @@ describe('SQLiteParentChunkStore', () => {
     });
   });
 
-  describe('close', () => {
-    it('closes the database', () => {
-      store.close();
-
-      // Subsequent operations should throw
-      expect(() => store.getParents([1])).toThrow();
-    });
-  });
-
   describe('config validation', () => {
     it('throws error for empty dbPath', () => {
       expect(() => SQLiteParentChunkStore.create({ dbPath: '' })).toThrow(
@@ -347,5 +338,16 @@ describe('SQLiteParentChunkStore', () => {
         SQLiteParentChunkStore.create({ dbPath: ':memory:' }),
       ).not.toThrow();
     });
+  });
+});
+
+describe('SQLiteParentChunkStore - close behavior', () => {
+  it('closes the database and prevents further operations', () => {
+    const store = SQLiteParentChunkStore.create({ dbPath: ':memory:' });
+
+    store.close();
+
+    // Subsequent operations should throw
+    expect(() => store.getParents([1])).toThrow();
   });
 });
