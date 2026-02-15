@@ -65,7 +65,8 @@ export class ParentChildChunkingService {
     );
 
     const results: ParentChunkResult[] = [];
-    for (const parentText of parentChunks) {
+    for (let i = 0; i < parentChunks.length; i++) {
+      const parentText = parentChunks[i];
       const childChunks = this.textChunker.chunk(
         parentText,
         this.childChunkSize,
