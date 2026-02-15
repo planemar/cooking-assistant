@@ -26,7 +26,7 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     }
 
     logger.info(
-      `Initializing SQLiteParentChunkStore with dbPath: ${config.dbPath}`,
+      `Initializing SQLiteParentChunkStore with dbPath: ${trimmedPath}`,
     );
 
     return new SQLiteParentChunkStore({ ...config, dbPath: trimmedPath });
