@@ -20,7 +20,6 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
   public static create(
     config: SQLiteParentChunkStoreConfig,
   ): SQLiteParentChunkStore {
-    // Validate config
     const trimmedPath = config.dbPath.trim();
     if (!trimmedPath) {
       throw new Error('dbPath must be a non-empty string');
@@ -123,7 +122,6 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
       return [];
     }
 
-    // Build parameterized query with dynamic placeholders
     const placeholders = ids.map(() => '?').join(',');
     const query = `
       SELECT id, source_file, parent_index, content, hash, synced_at
