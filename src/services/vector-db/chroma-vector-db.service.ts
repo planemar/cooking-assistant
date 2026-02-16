@@ -32,7 +32,7 @@ export class ChromaVectorDBService implements VectorDBService {
     return { 'hnsw:space': 'cosine' };
   }
 
-  static async create(config: ChromaDBConfig): Promise<VectorDBService> {
+  static async create(config: ChromaDBConfig): Promise<ChromaVectorDBService> {
     const { collectionName, chromaUrl } = config;
 
     if (!collectionName || collectionName.trim() === '') {
