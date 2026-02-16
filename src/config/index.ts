@@ -50,8 +50,9 @@ function readConfig(): AppConfig {
   } catch (error) {
     if (error instanceof z.ZodError) {
       logger.error('Configuration validation failed:');
-      for (let i = 0; i < error.errors.length; i++) {
-        const err = error.errors[i];
+      const errors = error.issues;
+      for (let i = 0; i < errors.length; i++) {
+        const err = errors[i];
         logger.error(`  - ${err.path.join('.')}: ${err.message}`);
       }
     }
