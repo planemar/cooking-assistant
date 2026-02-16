@@ -106,7 +106,7 @@ async function syncDocuments(reset: boolean = false): Promise<void> {
 
   if (toDelete.length > 0) {
     logger.info('Deleting removed documents...');
-    await vectorDB.deleteDocuments(toDelete);
+    await vectorDB.deleteDocuments({ ids: toDelete });
     logger.info(`✓ Deleted ${toDelete.length} document(s)`);
   }
 
