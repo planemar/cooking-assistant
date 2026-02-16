@@ -39,7 +39,10 @@ export interface DocumentInfo {
 export interface VectorDBService {
   addDocuments(documents: VectorDocument[]): Promise<void>;
   updateDocuments(documents: VectorDocument[]): Promise<void>;
-  deleteDocuments(ids: string[]): Promise<void>;
+  deleteDocuments(params: {
+    ids?: string[];
+    where?: Record<string, any>;
+  }): Promise<void>;
 
   /**
    * Query the vector database for similar documents

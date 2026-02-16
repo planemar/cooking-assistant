@@ -12,7 +12,7 @@ export class GeminiAskingService implements LLMAskingService {
     this.modelName = modelName;
   }
 
-  static create(config: GeminiModelSpecificConfig): LLMAskingService {
+  static create(config: GeminiModelSpecificConfig): GeminiAskingService {
     const { apiKey, modelName } = config;
 
     if (!apiKey || apiKey.trim() === '') {

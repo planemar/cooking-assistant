@@ -1,5 +1,6 @@
 import { logger } from '../../utils/logger';
 import type { LLMAskingService, LLMEmbeddingService } from '../llm';
+import type { ParentChunkDocumentStore } from '../parent-chunk-store';
 import type { VectorDBService } from '../vector-db';
 import type { RAGService } from './rag.interface';
 
@@ -30,6 +31,7 @@ export class MyCustomRAGService implements RAGService {
   private vectorDB: VectorDBService;
   private embeddingService: LLMEmbeddingService;
   private askingService: LLMAskingService;
+  private parentChunkStore: ParentChunkDocumentStore;
   private nResults: number;
   private minSimilarity: number;
 
@@ -37,12 +39,14 @@ export class MyCustomRAGService implements RAGService {
     vectorDB: VectorDBService,
     embeddingService: LLMEmbeddingService,
     askingService: LLMAskingService,
+    parentChunkStore: ParentChunkDocumentStore,
     nResults: number,
     minSimilarity: number,
   ) {
     this.vectorDB = vectorDB;
     this.embeddingService = embeddingService;
     this.askingService = askingService;
+    this.parentChunkStore = parentChunkStore;
     this.nResults = nResults;
     this.minSimilarity = minSimilarity;
   }
@@ -51,8 +55,9 @@ export class MyCustomRAGService implements RAGService {
     vectorDB: VectorDBService,
     embeddingService: LLMEmbeddingService,
     askingService: LLMAskingService,
+    parentChunkStore: ParentChunkDocumentStore,
     config: MyCustomRAGConfig,
-  ): RAGService {
+  ): MyCustomRAGService {
     const { nResults, minSimilarity } = config;
 
     if (nResults <= 0) {
@@ -69,6 +74,7 @@ export class MyCustomRAGService implements RAGService {
       vectorDB,
       embeddingService,
       askingService,
+      parentChunkStore,
       nResults,
       minSimilarity,
     );
@@ -81,25 +87,52 @@ export class MyCustomRAGService implements RAGService {
 
     const questionEmbedding =
       await this.embeddingService.embedRetrievalQuery(question);
-    const matches = await this.vectorDB.query(
+    const childMatches = await this.vectorDB.query(
       questionEmbedding,
       this.nResults,
       this.minSimilarity,
     );
 
-    if (matches.length === 0) {
+    if (childMatches.length === 0) {
       return NO_RESULTS_MESSAGE;
     }
 
-    logger.debug(`Top match simiarity: ${matches[0].similarity}`);
+    logger.debug(`Top child match similarity: ${childMatches[0].similarity}`);
     logger.debug(
-      `Top match doc substr(0, 30): ${matches[0].document.substring(0, 30)}`,
+      `Top child match doc substr(0, 30): ${childMatches[0].document.substring(0, 30)}`,
     );
-    const context = matches
-      .map(
-        (match, index) =>
-          `[Document ${index + 1}] (Similarity: ${match.similarity.toFixed(2)})\n${match.document}`,
-      )
+
+    const parentBestSimilarity = new Map<number, number>();
+    for (let i = 0; i < childMatches.length; i++) {
+      const child = childMatches[i];
+      const parentId = child.metadata.parentId as number;
+      const existing = parentBestSimilarity.get(parentId);
+      if (!existing || child.similarity > existing) {
+        parentBestSimilarity.set(parentId, child.similarity);
+      }
+    }
+
+    const parentIds = Array.from(parentBestSimilarity.keys());
+    const parents = await this.parentChunkStore.getParents(parentIds);
+    if (parents.length === 0) {
+      return NO_RESULTS_MESSAGE;
+    }
+
+    logger.info(
+      `Found ${childMatches.length} child matches from ${parents.length} unique parents`,
+    );
+
+    const sortedParents = parents.sort((a, b) => {
+      const simA = parentBestSimilarity.get(a.id) ?? 0;
+      const simB = parentBestSimilarity.get(b.id) ?? 0;
+      return simB - simA;
+    });
+
+    const context = sortedParents
+      .map((parent, i) => {
+        const sim = parentBestSimilarity.get(parent.id) ?? 0;
+        return `[Document ${i + 1}] (Best match: ${sim.toFixed(2)})\n${parent.content}`;
+      })
       .join('\n\n');
 
     const prompt = this.buildPrompt(question, context);

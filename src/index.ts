@@ -1,9 +1,11 @@
 import 'dotenv/config';
 import { createServer } from './api/server';
+import { getConfig } from './config';
 import {
   GeminiAskingService,
   GeminiEmbeddingService,
 } from './services/llm/gemini';
+import { SQLiteParentChunkStore } from './services/parent-chunk-store';
 import { MyCustomRAGService } from './services/rag';
 import { ChromaVectorDBService } from './services/vector-db';
 import { logger } from './utils/logger';
@@ -11,104 +13,67 @@ import { logger } from './utils/logger';
 async function initializeServices() {
   logger.info('Initializing services...');
 
-  if (
-    !process.env.COLLECTION_NAME ||
-    process.env.COLLECTION_NAME.trim() === ''
-  ) {
-    throw new Error('COLLECTION_NAME environment variable is required');
-  }
-
-  if (!process.env.CHROMA_URL || process.env.CHROMA_URL.trim() === '') {
-    throw new Error('CHROMA_URL environment variable is required');
-  }
-
-  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '') {
-    throw new Error('GEMINI_API_KEY environment variable is required');
-  }
-
-  if (
-    !process.env.GEMINI_EMBEDDING_MODEL ||
-    process.env.GEMINI_EMBEDDING_MODEL.trim() === ''
-  ) {
-    throw new Error('GEMINI_EMBEDDING_MODEL environment variable is required');
-  }
-
-  if (
-    !process.env.GEMINI_ASK_MODEL ||
-    process.env.GEMINI_ASK_MODEL.trim() === ''
-  ) {
-    throw new Error('GEMINI_ASK_MODEL environment variable is required');
-  }
-
-  if (!process.env.RAG_N_RESULTS) {
-    throw new Error('RAG_N_RESULTS environment variable is required');
-  }
-
-  if (!process.env.RAG_MIN_SIMILARITY) {
-    throw new Error('RAG_MIN_SIMILARITY environment variable is required');
-  }
-
-  if (!process.env.PORT) {
-    throw new Error('PORT environment variable is required');
-  }
-
-  const nResults = parseInt(process.env.RAG_N_RESULTS, 10);
-  const minSimilarity = parseFloat(process.env.RAG_MIN_SIMILARITY);
-  const port = parseInt(process.env.PORT, 10);
-
-  if (Number.isNaN(nResults) || nResults <= 0) {
-    throw new Error('RAG_N_RESULTS must be a positive number');
-  }
-
-  if (Number.isNaN(minSimilarity) || minSimilarity < 0 || minSimilarity > 1) {
-    throw new Error('RAG_MIN_SIMILARITY must be a number between 0 and 1');
-  }
-
-  if (Number.isNaN(port) || port <= 0) {
-    throw new Error('PORT must be a valid positive number');
-  }
+  const config = getConfig();
 
   const vectorDB = await ChromaVectorDBService.create({
-    collectionName: process.env.COLLECTION_NAME,
-    chromaUrl: process.env.CHROMA_URL,
+    collectionName: config.collectionName,
+    chromaUrl: config.chromaUrl,
   });
 
   const embeddingService = GeminiEmbeddingService.create({
-    apiKey: process.env.GEMINI_API_KEY,
-    modelName: process.env.GEMINI_EMBEDDING_MODEL,
+    apiKey: config.geminiApiKey,
+    modelName: config.geminiEmbeddingModel,
   });
 
   const askingService = GeminiAskingService.create({
-    apiKey: process.env.GEMINI_API_KEY,
-    modelName: process.env.GEMINI_ASK_MODEL,
+    apiKey: config.geminiApiKey,
+    modelName: config.geminiAskModel,
+  });
+
+  const parentChunkStore = SQLiteParentChunkStore.create({
+    dbPath: config.sqliteDbPath,
   });
 
   const ragService = MyCustomRAGService.create(
     vectorDB,
     embeddingService,
     askingService,
+    parentChunkStore,
     {
-      nResults,
-      minSimilarity,
+      nResults: config.ragNResults,
+      minSimilarity: config.ragMinSimilarity,
     },
   );
 
   logger.info('✓ All services initialized successfully');
 
-  return { ragService, port };
+  return { ragService, parentChunkStore, port: config.port };
 }
 
 async function startServer() {
   try {
-    const { ragService, port } = await initializeServices();
+    const { ragService, parentChunkStore, port } = await initializeServices();
 
     const app = createServer(ragService);
 
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
       logger.info(`✓ Server is running on http://localhost:${port}`);
       logger.info(`  POST /chatbot/ask - Ask a question`);
       logger.info(`  GET  /health      - Health check`);
     });
+
+    const shutdown = () => {
+      logger.info('Shutting down gracefully...');
+      server.close(async () => {
+        logger.info('✓ HTTP server closed');
+        await parentChunkStore.close();
+        logger.info('✓ Database connections closed');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
   } catch (error) {
     logger.error(
       'Failed to start server',

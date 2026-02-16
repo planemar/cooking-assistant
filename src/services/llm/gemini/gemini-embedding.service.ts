@@ -23,7 +23,7 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
     this.modelName = modelName;
   }
 
-  static create(config: GeminiModelSpecificConfig): LLMEmbeddingService {
+  static create(config: GeminiModelSpecificConfig): GeminiEmbeddingService {
     const { apiKey, modelName } = config;
 
     if (!apiKey || apiKey.trim() === '') {

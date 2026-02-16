@@ -32,7 +32,7 @@ export class ChromaVectorDBService implements VectorDBService {
     return { 'hnsw:space': 'cosine' };
   }
 
-  static async create(config: ChromaDBConfig): Promise<VectorDBService> {
+  static async create(config: ChromaDBConfig): Promise<ChromaVectorDBService> {
     const { collectionName, chromaUrl } = config;
 
     if (!collectionName || collectionName.trim() === '') {
@@ -103,14 +103,24 @@ export class ChromaVectorDBService implements VectorDBService {
     });
   }
 
-  async deleteDocuments(ids: string[]): Promise<void> {
-    if (ids.length === 0) {
+  async deleteDocuments(params: {
+    ids?: string[];
+    where?: Record<string, any>;
+  }): Promise<void> {
+    const { ids, where } = params;
+
+    if ((ids && where) || (!ids && !where)) {
+      throw new Error('Must provide either ids or where, but not both');
+    }
+
+    if (ids) {
+      await this.collection.delete({ ids });
+      logger.info(`Deleted ${ids.length} document(s) by IDs`);
       return;
     }
 
-    await this.collection.delete({
-      ids,
-    });
+    await this.collection.delete({ where });
+    logger.info(`Deleted documents matching filter: ${JSON.stringify(where)}`);
   }
 
   async query(
