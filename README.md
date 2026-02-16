@@ -1,62 +1,43 @@
 # AI Cooking Assistant
 
-A RAG (Retrieval-Augmented Generation) chatbot for your personal recipe collection. It uses Google's Gemini models for both generating embeddings and answering questions, allowing you to chat with your cookbook.
+A RAG (Retrieval-Augmented Generation) chatbot for your personal recipe collection. Drop recipe `.txt` files into a folder, sync them, and ask questions about your recipes through a REST API.
 
-Simply drop your recipe text files into the data folder, sync, and ask questions like "I have chicken and potatoes, what can I cook?".
+Powered by Google Gemini for embeddings and answer generation, ChromaDB for vector search, and SQLite for parent chunk storage.
 
 ## Features
 
-- **Personal Recipe Knowledge Base**: Ingests your local text (`.txt`) recipe files.
-- **Smart Recommendations**: Uses semantic search to find relevant recipes based on ingredients or cravings.
-- **Gemini-Powered**: Utilizes `gemini-embedding-001` for embeddings and `gemini-3-flash-preview` for generation, or you can change it to any other Gemini model in the .env file.
-- **Sync**: Synchronization script that adds, updates, or deletes recipes from the vector database based on file changes.
-- **Vector Search**: fast and efficient similarity search using ChromaDB.
+- **Parent-child chunking** - Documents are split into parent chunks (stored in SQLite) and smaller child chunks (embedded and stored in ChromaDB). Queries match against precise child chunks, then retrieve full parent context for richer answers.
+- **Incremental sync** - Only new or modified files are re-processed. Deleted files are cleaned up automatically from both stores.
 
 ## Prerequisites
 
-- **Node.js**: v20+
-- **ChromaDB**: A running instance of ChromaDB (e.g., via Docker).
-- **Gemini API Key**: From [Google AI Studio](https://aistudio.google.com/).
+- Node.js v20+
+- ChromaDB server running (default: `http://localhost:8000`)
+- A `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/)
 
 ## Setup
 
-1. **Clone and Install**
+1. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. **Environment Configuration**
-   Create a `.env` file in the root directory. You can copy `.env.example` if it exists, but ensure you set the following variables required by the application:
-
-   ```env
-   # Server
-   PORT=3000
-
-   # Database
-   CHROMA_URL=http://localhost:8000
-   COLLECTION_NAME=recipes
-
-   # Google Gemini
-   GEMINI_API_KEY=your_gemini_api_key_here
-   GEMINI_EMBEDDING_MODEL=gemini-embedding-001
-   GEMINI_ASK_MODEL=gemini-3-flash-preview
-
-   # RAG Settings
-   RAG_N_RESULTS=5                          # Number of recipes to retrieve context from
-   RAG_MIN_SIMILARITY=0.7                   # Minimum similarity score (0.0 to 1.0)
-   DOCUMENTS_DIR=./data/documents           # Directory containing .txt recipe files
+2. **Configure environment**
+   ```bash
+   cp .env.example .env
    ```
+   Edit `.env` and set your `GEMINI_API_KEY`. See `.env.example` for all available settings.
 
-3. **Prepare Data**
-   Add your .txt files to **data/documents**
+3. **Add recipes**
 
-4. **Sync Recipes**
-   Run the synchronization script to process your text files and load them into ChromaDB:
+   Place your `.txt` recipe files in `data/documents/`.
+
+4. **Sync recipes**
    ```bash
    npm run sync-docs
    ```
 
-5. **Start Server**
+5. **Start the server**
    ```bash
    npm run build
    npm run start
@@ -64,21 +45,62 @@ Simply drop your recipe text files into the data folder, sync, and ask questions
 
 ## Usage
 
-### Ask for Advice
+```bash
+curl -X POST http://localhost:3000/chatbot/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How do I make chicken katsu curry?"}'
+```
 
-**Endpoint**: `POST /chatbot/ask`
-
-**Request**:
+Response:
 ```json
 {
-  "question": "I want to cook a dessert with apples. What do you have?"
+  "question": "How do I make chicken katsu curry?",
+  "answer": "Based on your recipes, here's how to make Chicken Katsu Curry..."
 }
 ```
 
-**Response**:
-```json
-{
-  "question": "I want to cook a dessert with apples. What do you have?",
-  "answer": "Based on your recipes, I found 'Grandma's Apple Pie'. It requires granny smith apples, cinnamon, and..."
-}
+### Syncing
+
+```bash
+npm run sync-docs              # Incremental sync (add/update/delete)
+npm run sync-docs -- --reset   # Full reset and re-sync from scratch
 ```
+
+## API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/chatbot/ask` | POST | Takes `{ "question": "..." }`, returns `{ "question", "answer" }` |
+| `/health` | GET | Health check |
+
+## Development
+
+```bash
+npm run dev          # Dev server with hot reload
+npm run build        # Compile TypeScript
+npm test             # Run tests
+npm run test:watch   # Run tests in watch mode
+npm run check        # Lint with Biome
+npm run check:fix    # Lint and auto-fix
+```
+
+## Configuration
+
+All configuration is via environment variables (validated on startup). Key settings:
+
+| Variable | Description |
+|----------|-------------|
+| `GEMINI_API_KEY` | Google AI Studio API key |
+| `CHROMA_URL` | ChromaDB server URL |
+| `SQLITE_DB_PATH` | SQLite database file path (default: `./data/parents.db`) |
+| `CHILD_CHUNK_SIZE` | Child chunk size in characters (default: 500) |
+| `CHILD_CHUNK_OVERLAP_FACTOR` | Child overlap size as multiple of child size (default: 0.2) |
+| `PARENT_CHUNK_SIZE_FACTOR` | Parent size as multiple of child size (default: 5) |
+| `RAG_N_RESULTS` | Max results to retrieve per query (default: 5) |
+| `RAG_MIN_SIMILARITY` | Minimum similarity threshold 0-1 (default: 0.7) |
+
+See `.env.example` for the complete list.
+
+## Tech Stack
+
+TypeScript, ChromaDB, SQLite, Google Gemini, Vitest, Biome
