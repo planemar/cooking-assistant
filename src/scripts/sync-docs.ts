@@ -4,14 +4,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getConfig } from '../config';
 import { ParentChildChunkingService } from '../services/chunking';
-import type { LLMEmbeddingService } from '../services/llm/llm.interface';
-import type { ParentChunkDocumentStore } from '../services/parent-chunk-store/parent-chunk-store.interface';
-import type { VectorDBService } from '../services/vector-db/vector-db.interface';
 import { GeminiEmbeddingService } from '../services/llm/gemini';
-import { ChromaVectorDBService } from '../services/vector-db';
+import type { LLMEmbeddingService } from '../services/llm/llm.interface';
 import { SQLiteParentChunkStore } from '../services/parent-chunk-store';
-import { ParagraphSentenceChunker } from '../utils/text-chunker/paragraph-sentence-chunker';
+import type { ParentChunkDocumentStore } from '../services/parent-chunk-store/parent-chunk-store.interface';
+import { ChromaVectorDBService } from '../services/vector-db';
+import type { VectorDBService } from '../services/vector-db/vector-db.interface';
 import { logger } from '../utils/logger';
+import { ParagraphSentenceChunker } from '../utils/text-chunker/paragraph-sentence-chunker';
 
 const HASH_ALGORITHM = 'sha256';
 
@@ -57,13 +57,15 @@ export async function syncDocumentsCore(
     embeddingService: LLMEmbeddingService;
     chunkingService: ParentChildChunkingService;
     parentStore: ParentChunkDocumentStore;
-    readFiles: (dir: string) => Promise<Array<{ fileName: string; content: string }>>;
+    readFiles: (
+      dir: string,
+    ) => Promise<Array<{ fileName: string; content: string }>>;
     computeHash: (content: string) => string;
   },
   config: {
     documentsDir: string;
   },
-  reset: boolean = false
+  reset: boolean = false,
 ): Promise<void> {
   logger.info('Starting document synchronization...');
   logger.info(`Documents directory: ${config.documentsDir}`);
@@ -72,7 +74,9 @@ export async function syncDocumentsCore(
     logger.info('Reset flag detected - resetting both stores...');
     await deps.vectorDB.reset();
     await deps.parentStore.deleteAll();
-    logger.info('Reset complete. Collections will be recreated on next operation.');
+    logger.info(
+      'Reset complete. Collections will be recreated on next operation.',
+    );
   }
 
   const currentFiles = await deps.readFiles(config.documentsDir);
@@ -121,7 +125,7 @@ export async function syncDocumentsCore(
 
   if (filesToAdd.length > 0) {
     logger.info('Adding new documents...');
-    await processFiles(filesToAdd, deps, false);
+    await processFiles(filesToAdd, deps);
     logger.info(`✓ Added ${filesToAdd.length} document(s)`);
   }
 
@@ -130,9 +134,11 @@ export async function syncDocumentsCore(
     for (let i = 0; i < filesToUpdate.length; i++) {
       const file = filesToUpdate[i];
       await deps.parentStore.deleteBySourceFile(file.fileName);
-      await deps.vectorDB.deleteDocuments({ where: { sourceFile: file.fileName } });
+      await deps.vectorDB.deleteDocuments({
+        where: { sourceFile: file.fileName },
+      });
     }
-    await processFiles(filesToUpdate, deps, false);
+    await processFiles(filesToUpdate, deps);
     logger.info(`✓ Updated ${filesToUpdate.length} document(s)`);
   }
 
@@ -151,7 +157,6 @@ async function processFiles(
     vectorDB: VectorDBService;
     computeHash: (content: string) => string;
   },
-  isUpdate: boolean
 ): Promise<void> {
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -201,7 +206,8 @@ async function processFiles(
     }
 
     const childTexts = allChildDocs.map((doc) => doc.document);
-    const embeddings = await deps.embeddingService.embedBatchRetrievalDocument(childTexts);
+    const embeddings =
+      await deps.embeddingService.embedBatchRetrievalDocument(childTexts);
 
     const documentsWithEmbeddings = allChildDocs.map((doc, index) => ({
       ...doc,
@@ -259,7 +265,7 @@ async function syncDocuments(reset: boolean = false): Promise<void> {
       {
         documentsDir,
       },
-      reset
+      reset,
     );
   } finally {
     await parentStore.close();

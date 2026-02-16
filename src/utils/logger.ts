@@ -30,7 +30,9 @@ class Logger {
         this.logLevel = LogLevel.ERROR;
         break;
       default:
-        throw new Error(`Invalid LOG_LEVEL: ${level}. Must be DEBUG, INFO, WARN, or ERROR`);
+        throw new Error(
+          `Invalid LOG_LEVEL: ${level}. Must be DEBUG, INFO, WARN, or ERROR`,
+        );
     }
   }
 

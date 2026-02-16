@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ParentChunkResult, ParentChildChunkingService } from '../services/chunking/parent-child-chunking.service';
+import type {
+  ParentChildChunkingService,
+  ParentChunkResult,
+} from '../services/chunking/parent-child-chunking.service';
 import type { LLMEmbeddingService } from '../services/llm/llm.interface';
 import type { ParentChunkDocumentStore } from '../services/parent-chunk-store/parent-chunk-store.interface';
 import type { VectorDBService } from '../services/vector-db/vector-db.interface';
@@ -29,9 +32,11 @@ describe('syncDocumentsCore', () => {
       embedBatch: vi.fn().mockResolvedValue([[]]),
       embedRetrievalQuery: vi.fn().mockResolvedValue([]),
       embedRetrievalDocument: vi.fn().mockResolvedValue([]),
-      embedBatchRetrievalDocument: vi.fn().mockImplementation(async (texts: string[]) => {
-        return texts.map((_, index) => Array(384).fill(index * 0.1));
-      }),
+      embedBatchRetrievalDocument: vi
+        .fn()
+        .mockImplementation(async (texts: string[]) => {
+          return texts.map((_, index) => Array(384).fill(index * 0.1));
+        }),
     };
 
     mockChunkingService = {
@@ -91,7 +96,7 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      false
+      false,
     );
 
     expect(mockParentStore.insertParents).toHaveBeenCalledTimes(1);
@@ -144,7 +149,7 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      false
+      false,
     );
 
     const insertCall = (mockParentStore.insertParents as any).mock.calls[0][0];
@@ -160,9 +165,9 @@ describe('syncDocumentsCore', () => {
       { fileName: 'recipe.txt', content: 'unchanged content' },
     ]);
     mockComputeHash.mockReturnValue('abc123');
-    mockParentStore.getAllSourceFileHashes = vi.fn().mockResolvedValue([
-      { sourceFile: 'recipe.txt', hash: 'abc123' },
-    ]);
+    mockParentStore.getAllSourceFileHashes = vi
+      .fn()
+      .mockResolvedValue([{ sourceFile: 'recipe.txt', hash: 'abc123' }]);
 
     await syncDocumentsCore(
       {
@@ -174,7 +179,7 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      false
+      false,
     );
 
     expect(mockParentStore.insertParents).not.toHaveBeenCalled();
@@ -188,9 +193,9 @@ describe('syncDocumentsCore', () => {
       { fileName: 'recipe.txt', content: 'new content' },
     ]);
     mockComputeHash.mockReturnValue('newHash');
-    mockParentStore.getAllSourceFileHashes = vi.fn().mockResolvedValue([
-      { sourceFile: 'recipe.txt', hash: 'oldHash' },
-    ]);
+    mockParentStore.getAllSourceFileHashes = vi
+      .fn()
+      .mockResolvedValue([{ sourceFile: 'recipe.txt', hash: 'oldHash' }]);
     mockChunkingService.chunk = vi.fn().mockReturnValue([
       {
         text: 'updated parent',
@@ -209,10 +214,12 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      false
+      false,
     );
 
-    expect(mockParentStore.deleteBySourceFile).toHaveBeenCalledWith('recipe.txt');
+    expect(mockParentStore.deleteBySourceFile).toHaveBeenCalledWith(
+      'recipe.txt',
+    );
     expect(mockVectorDB.deleteDocuments).toHaveBeenCalledWith({
       where: { sourceFile: 'recipe.txt' },
     });
@@ -222,9 +229,9 @@ describe('syncDocumentsCore', () => {
 
   it('Test 5: Deleted file removes parents and children', async () => {
     mockReadFiles.mockResolvedValue([]);
-    mockParentStore.getAllSourceFileHashes = vi.fn().mockResolvedValue([
-      { sourceFile: 'recipe.txt', hash: 'abc123' },
-    ]);
+    mockParentStore.getAllSourceFileHashes = vi
+      .fn()
+      .mockResolvedValue([{ sourceFile: 'recipe.txt', hash: 'abc123' }]);
 
     await syncDocumentsCore(
       {
@@ -236,10 +243,12 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      false
+      false,
     );
 
-    expect(mockParentStore.deleteBySourceFile).toHaveBeenCalledWith('recipe.txt');
+    expect(mockParentStore.deleteBySourceFile).toHaveBeenCalledWith(
+      'recipe.txt',
+    );
     expect(mockVectorDB.deleteDocuments).toHaveBeenCalledWith({
       where: { sourceFile: 'recipe.txt' },
     });
@@ -281,13 +290,15 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      false
+      false,
     );
 
     expect(mockParentStore.insertParents).toHaveBeenCalledTimes(2);
     expect(mockVectorDB.addDocuments).toHaveBeenCalledTimes(2);
 
-    expect(mockParentStore.deleteBySourceFile).toHaveBeenCalledWith('modified.txt');
+    expect(mockParentStore.deleteBySourceFile).toHaveBeenCalledWith(
+      'modified.txt',
+    );
     expect(mockVectorDB.deleteDocuments).toHaveBeenCalledWith({
       where: { sourceFile: 'modified.txt' },
     });
@@ -315,7 +326,7 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      true
+      true,
     );
 
     expect(mockVectorDB.reset).toHaveBeenCalled();
@@ -346,7 +357,7 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      false
+      false,
     );
 
     const addDocsCall = (mockVectorDB.addDocuments as any).mock.calls[0][0];
@@ -385,7 +396,7 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      false
+      false,
     );
 
     const insertCall = (mockParentStore.insertParents as any).mock.calls[0][0];
@@ -410,7 +421,7 @@ describe('syncDocumentsCore', () => {
         computeHash: mockComputeHash,
       },
       { documentsDir: '/test/docs' },
-      false
+      false,
     );
 
     expect(mockParentStore.insertParents).not.toHaveBeenCalled();

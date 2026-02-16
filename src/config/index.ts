@@ -3,24 +3,51 @@ import { logger } from '../utils/logger';
 
 const configSchema = z.object({
   port: z.coerce.number().int().positive().describe('Server port'),
-  logLevel: z.enum(['DEBUG', 'INFO', 'WARN', 'ERROR']).describe('Logging level'),
+  logLevel: z
+    .enum(['DEBUG', 'INFO', 'WARN', 'ERROR'])
+    .describe('Logging level'),
 
   chromaUrl: z.string().url().describe('ChromaDB server URL'),
   collectionName: z.string().min(1).describe('ChromaDB collection name'),
 
   geminiApiKey: z.string().min(1).describe('Google Gemini API key'),
-  geminiEmbeddingModel: z.string().min(1).describe('Gemini embedding model name'),
+  geminiEmbeddingModel: z
+    .string()
+    .min(1)
+    .describe('Gemini embedding model name'),
   geminiAskModel: z.string().min(1).describe('Gemini generation model name'),
 
-  ragNResults: z.coerce.number().int().positive().describe('Number of results to retrieve'),
-  ragMinSimilarity: z.coerce.number().min(0).max(1).describe('Minimum similarity threshold (0-1)'),
+  ragNResults: z.coerce
+    .number()
+    .int()
+    .positive()
+    .describe('Number of results to retrieve'),
+  ragMinSimilarity: z.coerce
+    .number()
+    .min(0)
+    .max(1)
+    .describe('Minimum similarity threshold (0-1)'),
 
-  documentsDir: z.string().min(1).describe('Directory containing recipe documents'),
+  documentsDir: z
+    .string()
+    .min(1)
+    .describe('Directory containing recipe documents'),
   sqliteDbPath: z.string().min(1).describe('SQLite database file path'),
 
-  childChunkSize: z.coerce.number().int().positive().describe('Child chunk size in characters'),
-  childChunkOverlapFactor: z.coerce.number().min(0).max(1).describe('Child chunk overlap factor (0-1)'),
-  parentChunkSizeFactor: z.coerce.number().min(1).describe('Parent size multiplier (parent = child * factor)'),
+  childChunkSize: z.coerce
+    .number()
+    .int()
+    .positive()
+    .describe('Child chunk size in characters'),
+  childChunkOverlapFactor: z.coerce
+    .number()
+    .min(0)
+    .max(1)
+    .describe('Child chunk overlap factor (0-1)'),
+  parentChunkSizeFactor: z.coerce
+    .number()
+    .min(1)
+    .describe('Parent size multiplier (parent = child * factor)'),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;

@@ -50,7 +50,9 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     logger.debug('SQLite schema initialized');
   }
 
-  public async insertParents(parents: Omit<ParentChunkDocument, 'id'>[]): Promise<number[]> {
+  public async insertParents(
+    parents: Omit<ParentChunkDocument, 'id'>[],
+  ): Promise<number[]> {
     if (parents.length === 0) {
       return [];
     }
@@ -151,7 +153,9 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     }));
   }
 
-  public async getParentsBySourceFile(sourceFile: string): Promise<ParentChunkDocument[]> {
+  public async getParentsBySourceFile(
+    sourceFile: string,
+  ): Promise<ParentChunkDocument[]> {
     const stmt = this.db.prepare(`
       SELECT id, source_file, parent_index, content, hash, synced_at
       FROM parents
@@ -178,7 +182,9 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     }));
   }
 
-  public async getAllSourceFileHashes(): Promise<{ sourceFile: string; hash: string }[]> {
+  public async getAllSourceFileHashes(): Promise<
+    { sourceFile: string; hash: string }[]
+  > {
     const stmt = this.db.prepare(`
       SELECT source_file, hash
       FROM parents
