@@ -22,7 +22,7 @@ interface FileInfo {
   hash: string;
 }
 
-async function computeFileHash(content: string): Promise<string> {
+function computeFileHash(content: string): string {
   return crypto.createHash(HASH_ALGORITHM).update(content).digest('hex');
 }
 
@@ -35,7 +35,7 @@ async function readDocumentFiles(documentsDir: string): Promise<FileInfo[]> {
   for (const fileName of txtFiles) {
     const filePath = path.join(documentsDir, fileName);
     const content = await fs.readFile(filePath, 'utf-8');
-    const hash = await computeFileHash(content);
+    const hash = computeFileHash(content);
 
     fileInfos.push({
       filePath,
@@ -71,14 +71,14 @@ export async function syncDocumentsCore(
   if (reset) {
     logger.info('Reset flag detected - resetting both stores...');
     await deps.vectorDB.reset();
-    deps.parentStore.deleteAll();
+    await deps.parentStore.deleteAll();
     logger.info('Reset complete. Collections will be recreated on next operation.');
   }
 
   const currentFiles = await deps.readFiles(config.documentsDir);
   logger.info(`Found ${currentFiles.length} document file(s)`);
 
-  const existingHashes = deps.parentStore.getAllSourceFileHashes();
+  const existingHashes = await deps.parentStore.getAllSourceFileHashes();
   const existingHashesMap = new Map(
     existingHashes.map((entry) => [entry.sourceFile, entry.hash]),
   );
@@ -113,7 +113,7 @@ export async function syncDocumentsCore(
     logger.info('Deleting removed documents...');
     for (let i = 0; i < filesToDelete.length; i++) {
       const sourceFile = filesToDelete[i];
-      deps.parentStore.deleteBySourceFile(sourceFile);
+      await deps.parentStore.deleteBySourceFile(sourceFile);
       await deps.vectorDB.deleteDocuments({ where: { sourceFile } });
     }
     logger.info(`✓ Deleted ${filesToDelete.length} document(s)`);
@@ -129,7 +129,7 @@ export async function syncDocumentsCore(
     logger.info('Updating modified documents...');
     for (let i = 0; i < filesToUpdate.length; i++) {
       const file = filesToUpdate[i];
-      deps.parentStore.deleteBySourceFile(file.fileName);
+      await deps.parentStore.deleteBySourceFile(file.fileName);
       await deps.vectorDB.deleteDocuments({ where: { sourceFile: file.fileName } });
     }
     await processFiles(filesToUpdate, deps, false);
@@ -173,7 +173,7 @@ async function processFiles(
       syncedAt,
     }));
 
-    const parentIds = deps.parentStore.insertParents(parentRecords);
+    const parentIds = await deps.parentStore.insertParents(parentRecords);
 
     const allChildDocs = [];
     for (let j = 0; j < chunks.length; j++) {
@@ -262,7 +262,7 @@ async function syncDocuments(reset: boolean = false): Promise<void> {
       reset
     );
   } finally {
-    parentStore.close();
+    await parentStore.close();
   }
 }
 
