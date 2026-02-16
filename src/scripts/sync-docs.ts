@@ -2,6 +2,7 @@ import 'dotenv/config';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { getConfig } from '../config';
 import { GeminiEmbeddingService } from '../services/llm/gemini';
 import { ChromaVectorDBService } from '../services/vector-db';
 import { logger } from '../utils/logger';
@@ -44,38 +45,14 @@ async function readDocumentFiles(documentsDir: string): Promise<FileInfo[]> {
 async function syncDocuments(reset: boolean = false): Promise<void> {
   logger.info('Starting document synchronization...');
 
-  if (
-    !process.env.COLLECTION_NAME ||
-    process.env.COLLECTION_NAME.trim() === ''
-  ) {
-    throw new Error('COLLECTION_NAME environment variable is required');
-  }
+  const config = getConfig();
 
-  if (!process.env.CHROMA_URL || process.env.CHROMA_URL.trim() === '') {
-    throw new Error('CHROMA_URL environment variable is required');
-  }
-
-  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '') {
-    throw new Error('GEMINI_API_KEY environment variable is required');
-  }
-
-  if (
-    !process.env.GEMINI_EMBEDDING_MODEL ||
-    process.env.GEMINI_EMBEDDING_MODEL.trim() === ''
-  ) {
-    throw new Error('GEMINI_EMBEDDING_MODEL environment variable is required');
-  }
-
-  if (!process.env.DOCUMENTS_DIR || process.env.DOCUMENTS_DIR.trim() === '') {
-    throw new Error('DOCUMENTS_DIR environment variable is required');
-  }
-
-  const documentsDir = path.resolve(process.env.DOCUMENTS_DIR);
+  const documentsDir = path.resolve(config.documentsDir);
   logger.info(`Documents directory: ${documentsDir}`);
 
   const vectorDB = await ChromaVectorDBService.create({
-    collectionName: process.env.COLLECTION_NAME,
-    chromaUrl: process.env.CHROMA_URL,
+    collectionName: config.collectionName,
+    chromaUrl: config.chromaUrl,
   });
 
   if (reset) {
@@ -87,8 +64,8 @@ async function syncDocuments(reset: boolean = false): Promise<void> {
   }
 
   const embeddingService = GeminiEmbeddingService.create({
-    apiKey: process.env.GEMINI_API_KEY,
-    modelName: process.env.GEMINI_EMBEDDING_MODEL,
+    apiKey: config.geminiApiKey,
+    modelName: config.geminiEmbeddingModel,
   });
 
   const currentFiles = await readDocumentFiles(documentsDir);
