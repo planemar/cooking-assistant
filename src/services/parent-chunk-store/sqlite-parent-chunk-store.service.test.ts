@@ -9,13 +9,13 @@ describe('SQLiteParentChunkStore', () => {
     store = SQLiteParentChunkStore.create({ dbPath: ':memory:' });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Close database connection to prevent resource leaks
-    store.close();
+    await store.close();
   });
 
   describe('insertParents', () => {
-    it('inserts new parents and returns IDs', () => {
+    it('inserts new parents and returns IDs', async () => {
       const parents = [
         {
           sourceFile: 'recipe1.txt',
@@ -40,7 +40,7 @@ describe('SQLiteParentChunkStore', () => {
         },
       ];
 
-      const ids = store.insertParents(parents);
+      const ids = await store.insertParents(parents);
 
       expect(ids).toHaveLength(3);
       expect(ids[0]).toBe(1);
@@ -48,21 +48,21 @@ describe('SQLiteParentChunkStore', () => {
       expect(ids[2]).toBe(3);
 
       // Verify content is stored correctly
-      const retrieved = store.getParents([1, 2, 3]);
+      const retrieved = await store.getParents([1, 2, 3]);
       expect(retrieved).toHaveLength(3);
       expect(retrieved[0].content).toBe('First parent chunk');
       expect(retrieved[1].content).toBe('Second parent chunk');
       expect(retrieved[2].content).toBe('Different recipe');
     });
 
-    it('returns empty array when given empty array', () => {
-      const ids = store.insertParents([]);
+    it('returns empty array when given empty array', async () => {
+      const ids = await store.insertParents([]);
       expect(ids).toEqual([]);
     });
   });
 
   describe('updateParents', () => {
-    it('updates existing parents by ID', () => {
+    it('updates existing parents by ID', async () => {
       // First insert some parents
       const parents = [
         {
@@ -74,7 +74,7 @@ describe('SQLiteParentChunkStore', () => {
         },
       ];
 
-      const ids = store.insertParents(parents);
+      const ids = await store.insertParents(parents);
       const originalId = ids[0];
 
       // Update with different content
@@ -89,24 +89,24 @@ describe('SQLiteParentChunkStore', () => {
         },
       ];
 
-      store.updateParents(updated);
+      await store.updateParents(updated);
 
       // Verify content was updated
-      const retrieved = store.getParents([originalId]);
+      const retrieved = await store.getParents([originalId]);
       expect(retrieved).toHaveLength(1);
       expect(retrieved[0].content).toBe('Updated content');
       expect(retrieved[0].hash).toBe('hash2');
       expect(retrieved[0].syncedAt).toBe(1708000100);
     });
 
-    it('does nothing when given empty array', () => {
-      store.updateParents([]);
+    it('does nothing when given empty array', async () => {
+      await store.updateParents([]);
       // Should not throw
     });
   });
 
   describe('getParents', () => {
-    it('retrieves parents by IDs', () => {
+    it('retrieves parents by IDs', async () => {
       const parents = [
         {
           sourceFile: 'recipe1.txt',
@@ -131,10 +131,10 @@ describe('SQLiteParentChunkStore', () => {
         },
       ];
 
-      const ids = store.insertParents(parents);
+      const ids = await store.insertParents(parents);
 
       // Fetch 2 by ID
-      const retrieved = store.getParents([ids[0], ids[2]]);
+      const retrieved = await store.getParents([ids[0], ids[2]]);
 
       expect(retrieved).toHaveLength(2);
       expect(retrieved[0].id).toBe(ids[0]);
@@ -149,19 +149,19 @@ describe('SQLiteParentChunkStore', () => {
       expect(retrieved[1].sourceFile).toBe('recipe2.txt');
     });
 
-    it('returns empty array for non-existent IDs', () => {
-      const retrieved = store.getParents([999, 1000]);
+    it('returns empty array for non-existent IDs', async () => {
+      const retrieved = await store.getParents([999, 1000]);
       expect(retrieved).toEqual([]);
     });
 
-    it('returns empty array when given empty array', () => {
-      const retrieved = store.getParents([]);
+    it('returns empty array when given empty array', async () => {
+      const retrieved = await store.getParents([]);
       expect(retrieved).toEqual([]);
     });
   });
 
   describe('getParentsBySourceFile', () => {
-    it('returns all parents for a file ordered by parentIndex', () => {
+    it('returns all parents for a file ordered by parentIndex', async () => {
       const parents = [
         {
           sourceFile: 'recipe1.txt',
@@ -193,9 +193,9 @@ describe('SQLiteParentChunkStore', () => {
         },
       ];
 
-      store.insertParents(parents);
+      await store.insertParents(parents);
 
-      const recipe1Parents = store.getParentsBySourceFile('recipe1.txt');
+      const recipe1Parents = await store.getParentsBySourceFile('recipe1.txt');
 
       expect(recipe1Parents).toHaveLength(3);
       expect(recipe1Parents[0].content).toBe('Recipe1 chunk 0');
@@ -208,7 +208,7 @@ describe('SQLiteParentChunkStore', () => {
   });
 
   describe('getAllSourceFileHashes', () => {
-    it('returns unique source files with hashes', () => {
+    it('returns unique source files with hashes', async () => {
       const parents = [
         {
           sourceFile: 'recipe1.txt',
@@ -240,9 +240,9 @@ describe('SQLiteParentChunkStore', () => {
         },
       ];
 
-      store.insertParents(parents);
+      await store.insertParents(parents);
 
-      const hashes = store.getAllSourceFileHashes();
+      const hashes = await store.getAllSourceFileHashes();
 
       expect(hashes).toHaveLength(3);
 
@@ -258,7 +258,7 @@ describe('SQLiteParentChunkStore', () => {
   });
 
   describe('deleteBySourceFile', () => {
-    it('removes all parents for that file', () => {
+    it('removes all parents for that file', async () => {
       const parents = [
         {
           sourceFile: 'recipe1.txt',
@@ -276,24 +276,24 @@ describe('SQLiteParentChunkStore', () => {
         },
       ];
 
-      store.insertParents(parents);
+      await store.insertParents(parents);
 
       // Delete recipe1.txt
-      store.deleteBySourceFile('recipe1.txt');
+      await store.deleteBySourceFile('recipe1.txt');
 
       // recipe1.txt should be gone
-      const recipe1Parents = store.getParentsBySourceFile('recipe1.txt');
+      const recipe1Parents = await store.getParentsBySourceFile('recipe1.txt');
       expect(recipe1Parents).toEqual([]);
 
       // recipe2.txt should remain
-      const recipe2Parents = store.getParentsBySourceFile('recipe2.txt');
+      const recipe2Parents = await store.getParentsBySourceFile('recipe2.txt');
       expect(recipe2Parents).toHaveLength(1);
       expect(recipe2Parents[0].sourceFile).toBe('recipe2.txt');
     });
   });
 
   describe('deleteAll', () => {
-    it('clears the table', () => {
+    it('clears the table', async () => {
       const parents = [
         {
           sourceFile: 'recipe1.txt',
@@ -311,11 +311,11 @@ describe('SQLiteParentChunkStore', () => {
         },
       ];
 
-      store.insertParents(parents);
+      await store.insertParents(parents);
 
-      store.deleteAll();
+      await store.deleteAll();
 
-      const hashes = store.getAllSourceFileHashes();
+      const hashes = await store.getAllSourceFileHashes();
       expect(hashes).toEqual([]);
     });
   });
@@ -342,12 +342,12 @@ describe('SQLiteParentChunkStore', () => {
 });
 
 describe('SQLiteParentChunkStore - close behavior', () => {
-  it('closes the database and prevents further operations', () => {
+  it('closes the database and prevents further operations', async () => {
     const store = SQLiteParentChunkStore.create({ dbPath: ':memory:' });
 
-    store.close();
+    await store.close();
 
     // Subsequent operations should throw
-    expect(() => store.getParents([1])).toThrow();
+    await expect(store.getParents([1])).rejects.toThrow();
   });
 });
