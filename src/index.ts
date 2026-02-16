@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { createServer } from './api/server';
+import { getConfig } from './config';
 import {
   GeminiAskingService,
   GeminiEmbeddingService,
@@ -11,76 +12,21 @@ import { logger } from './utils/logger';
 async function initializeServices() {
   logger.info('Initializing services...');
 
-  if (
-    !process.env.COLLECTION_NAME ||
-    process.env.COLLECTION_NAME.trim() === ''
-  ) {
-    throw new Error('COLLECTION_NAME environment variable is required');
-  }
-
-  if (!process.env.CHROMA_URL || process.env.CHROMA_URL.trim() === '') {
-    throw new Error('CHROMA_URL environment variable is required');
-  }
-
-  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '') {
-    throw new Error('GEMINI_API_KEY environment variable is required');
-  }
-
-  if (
-    !process.env.GEMINI_EMBEDDING_MODEL ||
-    process.env.GEMINI_EMBEDDING_MODEL.trim() === ''
-  ) {
-    throw new Error('GEMINI_EMBEDDING_MODEL environment variable is required');
-  }
-
-  if (
-    !process.env.GEMINI_ASK_MODEL ||
-    process.env.GEMINI_ASK_MODEL.trim() === ''
-  ) {
-    throw new Error('GEMINI_ASK_MODEL environment variable is required');
-  }
-
-  if (!process.env.RAG_N_RESULTS) {
-    throw new Error('RAG_N_RESULTS environment variable is required');
-  }
-
-  if (!process.env.RAG_MIN_SIMILARITY) {
-    throw new Error('RAG_MIN_SIMILARITY environment variable is required');
-  }
-
-  if (!process.env.PORT) {
-    throw new Error('PORT environment variable is required');
-  }
-
-  const nResults = parseInt(process.env.RAG_N_RESULTS, 10);
-  const minSimilarity = parseFloat(process.env.RAG_MIN_SIMILARITY);
-  const port = parseInt(process.env.PORT, 10);
-
-  if (Number.isNaN(nResults) || nResults <= 0) {
-    throw new Error('RAG_N_RESULTS must be a positive number');
-  }
-
-  if (Number.isNaN(minSimilarity) || minSimilarity < 0 || minSimilarity > 1) {
-    throw new Error('RAG_MIN_SIMILARITY must be a number between 0 and 1');
-  }
-
-  if (Number.isNaN(port) || port <= 0) {
-    throw new Error('PORT must be a valid positive number');
-  }
+  const config = getConfig();
 
   const vectorDB = await ChromaVectorDBService.create({
-    collectionName: process.env.COLLECTION_NAME,
-    chromaUrl: process.env.CHROMA_URL,
+    collectionName: config.collectionName,
+    chromaUrl: config.chromaUrl,
   });
 
   const embeddingService = GeminiEmbeddingService.create({
-    apiKey: process.env.GEMINI_API_KEY,
-    modelName: process.env.GEMINI_EMBEDDING_MODEL,
+    apiKey: config.geminiApiKey,
+    modelName: config.geminiEmbeddingModel,
   });
 
   const askingService = GeminiAskingService.create({
-    apiKey: process.env.GEMINI_API_KEY,
-    modelName: process.env.GEMINI_ASK_MODEL,
+    apiKey: config.geminiApiKey,
+    modelName: config.geminiAskModel,
   });
 
   const ragService = MyCustomRAGService.create(
@@ -88,14 +34,14 @@ async function initializeServices() {
     embeddingService,
     askingService,
     {
-      nResults,
-      minSimilarity,
+      nResults: config.ragNResults,
+      minSimilarity: config.ragMinSimilarity,
     },
   );
 
   logger.info('✓ All services initialized successfully');
 
-  return { ragService, port };
+  return { ragService, port: config.port };
 }
 
 async function startServer() {

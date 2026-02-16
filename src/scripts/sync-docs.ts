@@ -2,9 +2,16 @@ import 'dotenv/config';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { getConfig } from '../config';
+import { ParentChildChunkingService } from '../services/chunking';
 import { GeminiEmbeddingService } from '../services/llm/gemini';
+import type { LLMEmbeddingService } from '../services/llm/llm.interface';
+import { SQLiteParentChunkStore } from '../services/parent-chunk-store';
+import type { ParentChunkDocumentStore } from '../services/parent-chunk-store/parent-chunk-store.interface';
 import { ChromaVectorDBService } from '../services/vector-db';
+import type { VectorDBService } from '../services/vector-db/vector-db.interface';
 import { logger } from '../utils/logger';
+import { ParagraphSentenceChunker } from '../utils/text-chunker/paragraph-sentence-chunker';
 
 const HASH_ALGORITHM = 'sha256';
 
@@ -15,7 +22,7 @@ interface FileInfo {
   hash: string;
 }
 
-async function computeFileHash(content: string): Promise<string> {
+function computeFileHash(content: string): string {
   return crypto.createHash(HASH_ALGORITHM).update(content).digest('hex');
 }
 
@@ -28,7 +35,7 @@ async function readDocumentFiles(documentsDir: string): Promise<FileInfo[]> {
   for (const fileName of txtFiles) {
     const filePath = path.join(documentsDir, fileName);
     const content = await fs.readFile(filePath, 'utf-8');
-    const hash = await computeFileHash(content);
+    const hash = computeFileHash(content);
 
     fileInfos.push({
       filePath,
@@ -41,150 +48,239 @@ async function readDocumentFiles(documentsDir: string): Promise<FileInfo[]> {
   return fileInfos;
 }
 
-async function syncDocuments(reset: boolean = false): Promise<void> {
+/**
+ * Core sync logic - testable by accepting all dependencies
+ */
+export async function syncDocumentsCore(
+  deps: {
+    vectorDB: VectorDBService;
+    embeddingService: LLMEmbeddingService;
+    chunkingService: ParentChildChunkingService;
+    parentStore: ParentChunkDocumentStore;
+    readFiles: (
+      dir: string,
+    ) => Promise<Array<{ fileName: string; content: string }>>;
+    computeHash: (content: string) => string;
+  },
+  config: {
+    documentsDir: string;
+  },
+  reset: boolean = false,
+): Promise<void> {
   logger.info('Starting document synchronization...');
-
-  if (
-    !process.env.COLLECTION_NAME ||
-    process.env.COLLECTION_NAME.trim() === ''
-  ) {
-    throw new Error('COLLECTION_NAME environment variable is required');
-  }
-
-  if (!process.env.CHROMA_URL || process.env.CHROMA_URL.trim() === '') {
-    throw new Error('CHROMA_URL environment variable is required');
-  }
-
-  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '') {
-    throw new Error('GEMINI_API_KEY environment variable is required');
-  }
-
-  if (
-    !process.env.GEMINI_EMBEDDING_MODEL ||
-    process.env.GEMINI_EMBEDDING_MODEL.trim() === ''
-  ) {
-    throw new Error('GEMINI_EMBEDDING_MODEL environment variable is required');
-  }
-
-  if (!process.env.DOCUMENTS_DIR || process.env.DOCUMENTS_DIR.trim() === '') {
-    throw new Error('DOCUMENTS_DIR environment variable is required');
-  }
-
-  const documentsDir = path.resolve(process.env.DOCUMENTS_DIR);
-  logger.info(`Documents directory: ${documentsDir}`);
-
-  const vectorDB = await ChromaVectorDBService.create({
-    collectionName: process.env.COLLECTION_NAME,
-    chromaUrl: process.env.CHROMA_URL,
-  });
+  logger.info(`Documents directory: ${config.documentsDir}`);
 
   if (reset) {
-    logger.info('Reset flag detected - resetting ChromaDB instance...');
-    await vectorDB.reset();
+    logger.info('Reset flag detected - resetting both stores...');
+    await deps.vectorDB.reset();
+    await deps.parentStore.deleteAll();
     logger.info(
-      'ChromaDB reset complete. Collection will be recreated on next operation.',
+      'Reset complete. Collections will be recreated on next operation.',
     );
   }
 
-  const embeddingService = GeminiEmbeddingService.create({
-    apiKey: process.env.GEMINI_API_KEY,
-    modelName: process.env.GEMINI_EMBEDDING_MODEL,
-  });
-
-  const currentFiles = await readDocumentFiles(documentsDir);
+  const currentFiles = await deps.readFiles(config.documentsDir);
   logger.info(`Found ${currentFiles.length} document file(s)`);
 
-  if (currentFiles.length === 0) {
-    logger.info('No documents to sync');
-    return;
-  }
-
-  const existingDocs = await vectorDB.getAllDocumentInfo();
-  const existingDocsMap = new Map(
-    existingDocs.map((doc) => [doc.id, doc.metadata.hash]),
+  const existingHashes = await deps.parentStore.getAllSourceFileHashes();
+  const existingHashesMap = new Map(
+    existingHashes.map((entry) => [entry.sourceFile, entry.hash]),
   );
 
-  const toAdd: FileInfo[] = [];
-  const toUpdate: FileInfo[] = [];
-  const toDelete: string[] = [];
+  const filesToAdd: typeof currentFiles = [];
+  const filesToUpdate: typeof currentFiles = [];
+  const filesToDelete: string[] = [];
 
-  for (const file of currentFiles) {
-    const docId = file.fileName;
-    const existingHash = existingDocsMap.get(docId);
+  for (let i = 0; i < currentFiles.length; i++) {
+    const file = currentFiles[i];
+    const hash = deps.computeHash(file.content);
+    const existingHash = existingHashesMap.get(file.fileName);
 
     if (!existingHash) {
-      toAdd.push(file);
-    } else if (existingHash !== file.hash) {
-      toUpdate.push(file);
+      filesToAdd.push(file);
+    } else if (existingHash !== hash) {
+      filesToUpdate.push(file);
     }
 
-    existingDocsMap.delete(docId);
+    existingHashesMap.delete(file.fileName);
   }
 
-  toDelete.push(...existingDocsMap.keys());
+  for (const [sourceFile] of existingHashesMap) {
+    filesToDelete.push(sourceFile);
+  }
 
-  logger.info(`Documents to add: ${toAdd.length}`);
-  logger.info(`Documents to update: ${toUpdate.length}`);
-  logger.info(`Documents to delete: ${toDelete.length}`);
+  logger.info(`Documents to add: ${filesToAdd.length}`);
+  logger.info(`Documents to update: ${filesToUpdate.length}`);
+  logger.info(`Documents to delete: ${filesToDelete.length}`);
 
-  if (toDelete.length > 0) {
+  if (filesToDelete.length > 0) {
     logger.info('Deleting removed documents...');
-    await vectorDB.deleteDocuments(toDelete);
-    logger.info(`✓ Deleted ${toDelete.length} document(s)`);
+    for (let i = 0; i < filesToDelete.length; i++) {
+      const sourceFile = filesToDelete[i];
+      await deps.parentStore.deleteBySourceFile(sourceFile);
+      await deps.vectorDB.deleteDocuments({ where: { sourceFile } });
+    }
+    logger.info(`✓ Deleted ${filesToDelete.length} document(s)`);
   }
 
-  if (toAdd.length > 0) {
+  if (filesToAdd.length > 0) {
     logger.info('Adding new documents...');
-    const texts = toAdd.map((f) => f.content);
-    const embeddings =
-      await embeddingService.embedBatchRetrievalDocument(texts);
-
-    await vectorDB.addDocuments(
-      toAdd.map((file, index) => ({
-        id: file.fileName,
-        embedding: embeddings[index],
-        document: file.content,
-        metadata: {
-          fileName: file.fileName,
-          hash: file.hash,
-          addedAt: new Date().toISOString(),
-        },
-      })),
-    );
-    logger.info(`✓ Added ${toAdd.length} document(s)`);
+    await processFiles(filesToAdd, deps);
+    logger.info(`✓ Added ${filesToAdd.length} document(s)`);
   }
 
-  if (toUpdate.length > 0) {
+  if (filesToUpdate.length > 0) {
     logger.info('Updating modified documents...');
-    const texts = toUpdate.map((f) => f.content);
-    const embeddings =
-      await embeddingService.embedBatchRetrievalDocument(texts);
-
-    await vectorDB.updateDocuments(
-      toUpdate.map((file, index) => ({
-        id: file.fileName,
-        embedding: embeddings[index],
-        document: file.content,
-        metadata: {
-          fileName: file.fileName,
-          hash: file.hash,
-          updatedAt: new Date().toISOString(),
-        },
-      })),
-    );
-    logger.info(`✓ Updated ${toUpdate.length} document(s)`);
+    for (let i = 0; i < filesToUpdate.length; i++) {
+      const file = filesToUpdate[i];
+      await deps.parentStore.deleteBySourceFile(file.fileName);
+      await deps.vectorDB.deleteDocuments({
+        where: { sourceFile: file.fileName },
+      });
+    }
+    await processFiles(filesToUpdate, deps);
+    logger.info(`✓ Updated ${filesToUpdate.length} document(s)`);
   }
 
   logger.info('✓ Document synchronization complete!');
 }
 
-const args = process.argv.slice(2);
-const resetFlag = args.includes('--reset') || args.includes('-r');
+/**
+ * Helper function to process files and insert parent/child chunks
+ */
+async function processFiles(
+  files: Array<{ fileName: string; content: string }>,
+  deps: {
+    chunkingService: ParentChildChunkingService;
+    embeddingService: LLMEmbeddingService;
+    parentStore: ParentChunkDocumentStore;
+    vectorDB: VectorDBService;
+    computeHash: (content: string) => string;
+  },
+): Promise<void> {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const chunks = deps.chunkingService.chunk(file.content);
 
-syncDocuments(resetFlag).catch((error) => {
-  logger.error(
-    'Error during document synchronization',
-    error instanceof Error ? error : undefined,
-  );
-  process.exit(1);
-});
+    if (chunks.length === 0) {
+      logger.warn(`File ${file.fileName} produced no chunks, skipping`);
+      continue;
+    }
+
+    const hash = deps.computeHash(file.content);
+    const syncedAt = Date.now();
+
+    const parentRecords = chunks.map((chunk, parentIndex) => ({
+      sourceFile: file.fileName,
+      parentIndex,
+      content: chunk.text,
+      hash,
+      syncedAt,
+    }));
+
+    const parentIds = await deps.parentStore.insertParents(parentRecords);
+
+    const allChildDocs = [];
+    for (let j = 0; j < chunks.length; j++) {
+      const chunk = chunks[j];
+      const parentId = parentIds[j];
+      const parentIndex = j;
+
+      for (let k = 0; k < chunk.children.length; k++) {
+        const childText = chunk.children[k];
+        const childId = `chunk:${file.fileName}:${parentId}:${k}`;
+
+        allChildDocs.push({
+          id: childId,
+          document: childText,
+          metadata: {
+            sourceFile: file.fileName,
+            parentId,
+            parentIndex,
+            childIndex: k,
+            hash,
+            syncedAt,
+          },
+        });
+      }
+    }
+
+    const childTexts = allChildDocs.map((doc) => doc.document);
+    const embeddings =
+      await deps.embeddingService.embedBatchRetrievalDocument(childTexts);
+
+    const documentsWithEmbeddings = allChildDocs.map((doc, index) => ({
+      ...doc,
+      embedding: embeddings[index],
+    }));
+
+    await deps.vectorDB.addDocuments(documentsWithEmbeddings);
+  }
+}
+
+async function syncDocuments(reset: boolean = false): Promise<void> {
+  const config = getConfig();
+  const documentsDir = path.resolve(config.documentsDir);
+
+  const vectorDB = await ChromaVectorDBService.create({
+    collectionName: config.collectionName,
+    chromaUrl: config.chromaUrl,
+  });
+
+  const embeddingService = GeminiEmbeddingService.create({
+    apiKey: config.geminiApiKey,
+    modelName: config.geminiEmbeddingModel,
+  });
+
+  const textChunker = new ParagraphSentenceChunker();
+  const chunkingService = ParentChildChunkingService.create(textChunker, {
+    childChunkSize: config.childChunkSize,
+    childChunkOverlapFactor: config.childChunkOverlapFactor,
+    parentChunkSizeFactor: config.parentChunkSizeFactor,
+  });
+
+  const parentStore = SQLiteParentChunkStore.create({
+    dbPath: config.sqliteDbPath,
+  });
+
+  const readFilesAdapter = async (dir: string) => {
+    const files = await readDocumentFiles(dir);
+    return files.map((f) => ({ fileName: f.fileName, content: f.content }));
+  };
+
+  const computeHashAdapter = (content: string) => {
+    return crypto.createHash(HASH_ALGORITHM).update(content).digest('hex');
+  };
+
+  try {
+    await syncDocumentsCore(
+      {
+        vectorDB,
+        embeddingService,
+        chunkingService,
+        parentStore,
+        readFiles: readFilesAdapter,
+        computeHash: computeHashAdapter,
+      },
+      {
+        documentsDir,
+      },
+      reset,
+    );
+  } finally {
+    await parentStore.close();
+  }
+}
+
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const resetFlag = args.includes('--reset') || args.includes('-r');
+
+  syncDocuments(resetFlag).catch((error) => {
+    logger.error(
+      'Error during document synchronization',
+      error instanceof Error ? error : undefined,
+    );
+    process.exit(1);
+  });
+}

@@ -12,6 +12,10 @@ class Logger {
   private constructor() {
     const level = process.env.LOG_LEVEL?.toUpperCase();
 
+    if (!level) {
+      throw new Error('LOG_LEVEL environment variable is required');
+    }
+
     switch (level) {
       case 'DEBUG':
         this.logLevel = LogLevel.DEBUG;
@@ -26,7 +30,9 @@ class Logger {
         this.logLevel = LogLevel.ERROR;
         break;
       default:
-        this.logLevel = LogLevel.INFO;
+        throw new Error(
+          `Invalid LOG_LEVEL: ${level}. Must be DEBUG, INFO, WARN, or ERROR`,
+        );
     }
   }
 

@@ -8,17 +8,19 @@ export interface ParentChunkDocument {
 }
 
 export interface ParentChunkDocumentStore {
-  insertParents(parents: Omit<ParentChunkDocument, 'id'>[]): number[];
+  insertParents(parents: Omit<ParentChunkDocument, 'id'>[]): Promise<number[]>;
 
-  updateParents(parents: ParentChunkDocument[]): void;
+  updateParents(parents: ParentChunkDocument[]): Promise<void>;
 
-  getParents(ids: number[]): ParentChunkDocument[];
+  getParents(ids: number[]): Promise<ParentChunkDocument[]>;
 
-  getParentsBySourceFile(sourceFile: string): ParentChunkDocument[];
+  getParentsBySourceFile(sourceFile: string): Promise<ParentChunkDocument[]>;
 
-  getAllSourceFileHashes(): { sourceFile: string; hash: string }[];
+  getAllSourceFileHashes(): Promise<{ sourceFile: string; hash: string }[]>;
 
-  deleteBySourceFile(sourceFile: string): void;
+  deleteBySourceFile(sourceFile: string): Promise<void>;
 
-  deleteAll(): void;
+  deleteAll(): Promise<void>;
+
+  close(): Promise<void>;
 }

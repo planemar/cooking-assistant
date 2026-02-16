@@ -50,7 +50,9 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     logger.debug('SQLite schema initialized');
   }
 
-  public insertParents(parents: Omit<ParentChunkDocument, 'id'>[]): number[] {
+  public async insertParents(
+    parents: Omit<ParentChunkDocument, 'id'>[],
+  ): Promise<number[]> {
     if (parents.length === 0) {
       return [];
     }
@@ -87,7 +89,7 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     return ids;
   }
 
-  public updateParents(parents: ParentChunkDocument[]): void {
+  public async updateParents(parents: ParentChunkDocument[]): Promise<void> {
     if (parents.length === 0) {
       return;
     }
@@ -119,7 +121,7 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     logger.debug(`Updated ${parents.length} parent chunks`);
   }
 
-  public getParents(ids: number[]): ParentChunkDocument[] {
+  public async getParents(ids: number[]): Promise<ParentChunkDocument[]> {
     if (ids.length === 0) {
       return [];
     }
@@ -151,7 +153,9 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     }));
   }
 
-  public getParentsBySourceFile(sourceFile: string): ParentChunkDocument[] {
+  public async getParentsBySourceFile(
+    sourceFile: string,
+  ): Promise<ParentChunkDocument[]> {
     const stmt = this.db.prepare(`
       SELECT id, source_file, parent_index, content, hash, synced_at
       FROM parents
@@ -178,7 +182,9 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     }));
   }
 
-  public getAllSourceFileHashes(): { sourceFile: string; hash: string }[] {
+  public async getAllSourceFileHashes(): Promise<
+    { sourceFile: string; hash: string }[]
+  > {
     const stmt = this.db.prepare(`
       SELECT source_file, hash
       FROM parents
@@ -196,7 +202,7 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     }));
   }
 
-  public deleteBySourceFile(sourceFile: string): void {
+  public async deleteBySourceFile(sourceFile: string): Promise<void> {
     const stmt = this.db.prepare(`
       DELETE FROM parents
       WHERE source_file = ?
@@ -208,13 +214,13 @@ export class SQLiteParentChunkStore implements ParentChunkDocumentStore {
     );
   }
 
-  public deleteAll(): void {
+  public async deleteAll(): Promise<void> {
     const stmt = this.db.prepare('DELETE FROM parents');
     const result = stmt.run();
     logger.debug(`Deleted all ${result.changes} parent chunks`);
   }
 
-  public close(): void {
+  public async close(): Promise<void> {
     this.db.close();
     logger.debug('SQLite database connection closed');
   }
