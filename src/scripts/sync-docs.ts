@@ -3,12 +3,14 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getConfig } from '../config';
-import type { ParentChildChunkingService } from '../services/chunking/parent-child-chunking.service';
+import { ParentChildChunkingService } from '../services/chunking';
 import type { LLMEmbeddingService } from '../services/llm/llm.interface';
 import type { ParentChunkDocumentStore } from '../services/parent-chunk-store/parent-chunk-store.interface';
 import type { VectorDBService } from '../services/vector-db/vector-db.interface';
 import { GeminiEmbeddingService } from '../services/llm/gemini';
 import { ChromaVectorDBService } from '../services/vector-db';
+import { SQLiteParentChunkStore } from '../services/parent-chunk-store';
+import { ParagraphSentenceChunker } from '../utils/text-chunker/paragraph-sentence-chunker';
 import { logger } from '../utils/logger';
 
 const HASH_ALGORITHM = 'sha256';
@@ -224,10 +226,16 @@ async function syncDocuments(reset: boolean = false): Promise<void> {
     modelName: config.geminiEmbeddingModel,
   });
 
-  // TODO: Create real instances once ParentChildChunkingService and ParentChunkDocumentStore are wired
-  // This is a placeholder - Phase 3 will implement the actual wiring
-  const chunkingService = null as any;
-  const parentStore = null as any;
+  const textChunker = new ParagraphSentenceChunker();
+  const chunkingService = ParentChildChunkingService.create(textChunker, {
+    childChunkSize: config.childChunkSize,
+    childChunkOverlapFactor: config.childChunkOverlapFactor,
+    parentChunkSizeFactor: config.parentChunkSizeFactor,
+  });
+
+  const parentStore = SQLiteParentChunkStore.create({
+    dbPath: config.sqliteDbPath,
+  });
 
   const readFilesAdapter = async (dir: string) => {
     const files = await readDocumentFiles(dir);
@@ -238,20 +246,24 @@ async function syncDocuments(reset: boolean = false): Promise<void> {
     return crypto.createHash(HASH_ALGORITHM).update(content).digest('hex');
   };
 
-  await syncDocumentsCore(
-    {
-      vectorDB,
-      embeddingService,
-      chunkingService,
-      parentStore,
-      readFiles: readFilesAdapter,
-      computeHash: computeHashAdapter,
-    },
-    {
-      documentsDir,
-    },
-    reset
-  );
+  try {
+    await syncDocumentsCore(
+      {
+        vectorDB,
+        embeddingService,
+        chunkingService,
+        parentStore,
+        readFiles: readFilesAdapter,
+        computeHash: computeHashAdapter,
+      },
+      {
+        documentsDir,
+      },
+      reset
+    );
+  } finally {
+    parentStore.close();
+  }
 }
 
 if (require.main === module) {
