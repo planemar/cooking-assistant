@@ -48,13 +48,14 @@ describe('syncDocumentsCore', () => {
     } as any;
 
     mockParentStore = {
-      insertParents: vi.fn().mockReturnValue([1, 2]),
-      updateParents: vi.fn(),
-      getParents: vi.fn().mockReturnValue([]),
-      getParentsBySourceFile: vi.fn().mockReturnValue([]),
-      getAllSourceFileHashes: vi.fn().mockReturnValue([]),
-      deleteBySourceFile: vi.fn(),
-      deleteAll: vi.fn(),
+      insertParents: vi.fn().mockResolvedValue([1, 2]),
+      updateParents: vi.fn().mockResolvedValue(undefined),
+      getParents: vi.fn().mockResolvedValue([]),
+      getParentsBySourceFile: vi.fn().mockResolvedValue([]),
+      getAllSourceFileHashes: vi.fn().mockResolvedValue([]),
+      deleteBySourceFile: vi.fn().mockResolvedValue(undefined),
+      deleteAll: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
     };
 
     mockReadFiles = vi.fn().mockResolvedValue([]);
@@ -77,8 +78,8 @@ describe('syncDocumentsCore', () => {
         children: ['child 2.1', 'child 2.2'],
       },
     ]);
-    mockParentStore.getAllSourceFileHashes = vi.fn().mockReturnValue([]);
-    mockParentStore.insertParents = vi.fn().mockReturnValue([10, 11]);
+    mockParentStore.getAllSourceFileHashes = vi.fn().mockResolvedValue([]);
+    mockParentStore.insertParents = vi.fn().mockResolvedValue([10, 11]);
 
     await syncDocumentsCore(
       {
@@ -130,8 +131,8 @@ describe('syncDocumentsCore', () => {
         children: ['small child text'],
       },
     ]);
-    mockParentStore.getAllSourceFileHashes = vi.fn().mockReturnValue([]);
-    mockParentStore.insertParents = vi.fn().mockReturnValue([1]);
+    mockParentStore.getAllSourceFileHashes = vi.fn().mockResolvedValue([]);
+    mockParentStore.insertParents = vi.fn().mockResolvedValue([1]);
 
     await syncDocumentsCore(
       {
@@ -159,7 +160,7 @@ describe('syncDocumentsCore', () => {
       { fileName: 'recipe.txt', content: 'unchanged content' },
     ]);
     mockComputeHash.mockReturnValue('abc123');
-    mockParentStore.getAllSourceFileHashes = vi.fn().mockReturnValue([
+    mockParentStore.getAllSourceFileHashes = vi.fn().mockResolvedValue([
       { sourceFile: 'recipe.txt', hash: 'abc123' },
     ]);
 
@@ -187,7 +188,7 @@ describe('syncDocumentsCore', () => {
       { fileName: 'recipe.txt', content: 'new content' },
     ]);
     mockComputeHash.mockReturnValue('newHash');
-    mockParentStore.getAllSourceFileHashes = vi.fn().mockReturnValue([
+    mockParentStore.getAllSourceFileHashes = vi.fn().mockResolvedValue([
       { sourceFile: 'recipe.txt', hash: 'oldHash' },
     ]);
     mockChunkingService.chunk = vi.fn().mockReturnValue([
@@ -196,7 +197,7 @@ describe('syncDocumentsCore', () => {
         children: ['updated child'],
       },
     ]);
-    mockParentStore.insertParents = vi.fn().mockReturnValue([5]);
+    mockParentStore.insertParents = vi.fn().mockResolvedValue([5]);
 
     await syncDocumentsCore(
       {
@@ -221,7 +222,7 @@ describe('syncDocumentsCore', () => {
 
   it('Test 5: Deleted file removes parents and children', async () => {
     mockReadFiles.mockResolvedValue([]);
-    mockParentStore.getAllSourceFileHashes = vi.fn().mockReturnValue([
+    mockParentStore.getAllSourceFileHashes = vi.fn().mockResolvedValue([
       { sourceFile: 'recipe.txt', hash: 'abc123' },
     ]);
 
@@ -258,7 +259,7 @@ describe('syncDocumentsCore', () => {
       if (content === 'modified content') return 'modifiedhash_new';
       return 'defaulthash';
     });
-    mockParentStore.getAllSourceFileHashes = vi.fn().mockReturnValue([
+    mockParentStore.getAllSourceFileHashes = vi.fn().mockResolvedValue([
       { sourceFile: 'unchanged.txt', hash: 'unchangedhash' },
       { sourceFile: 'modified.txt', hash: 'modifiedhash_old' },
     ]);
@@ -268,7 +269,7 @@ describe('syncDocumentsCore', () => {
         children: ['child'],
       },
     ]);
-    mockParentStore.insertParents = vi.fn().mockReturnValue([1]);
+    mockParentStore.insertParents = vi.fn().mockResolvedValue([1]);
 
     await syncDocumentsCore(
       {
@@ -302,7 +303,7 @@ describe('syncDocumentsCore', () => {
         children: ['child'],
       },
     ]);
-    mockParentStore.insertParents = vi.fn().mockReturnValue([1]);
+    mockParentStore.insertParents = vi.fn().mockResolvedValue([1]);
 
     await syncDocumentsCore(
       {
@@ -333,7 +334,7 @@ describe('syncDocumentsCore', () => {
         children: ['child 1.1', 'child 1.2', 'child 1.3'],
       },
     ]);
-    mockParentStore.insertParents = vi.fn().mockReturnValue([42]);
+    mockParentStore.insertParents = vi.fn().mockResolvedValue([42]);
 
     await syncDocumentsCore(
       {
@@ -372,7 +373,7 @@ describe('syncDocumentsCore', () => {
         children: ['child 3.1'],
       },
     ]);
-    mockParentStore.insertParents = vi.fn().mockReturnValue([10, 11, 12]);
+    mockParentStore.insertParents = vi.fn().mockResolvedValue([10, 11, 12]);
 
     await syncDocumentsCore(
       {
