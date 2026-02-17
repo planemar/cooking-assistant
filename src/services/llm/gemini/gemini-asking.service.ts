@@ -25,7 +25,10 @@ export class GeminiAskingService implements LLMAskingService {
       throw new Error('modelName is required and cannot be empty');
     }
 
-    const genAI = new GoogleGenAI({ apiKey, httpOptions: { timeout: ASK_TIMEOUT_MS } });
+    const genAI = new GoogleGenAI({
+      apiKey,
+      httpOptions: { timeout: ASK_TIMEOUT_MS },
+    });
 
     logger.info('✓ Initialized Gemini asking service');
 

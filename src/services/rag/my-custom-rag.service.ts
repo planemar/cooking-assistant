@@ -137,11 +137,9 @@ export class MyCustomRAGService implements RAGService {
 
     const prompt = this.buildPrompt(question, context);
 
-    logger.debug(
-      `Prompt: ${prompt}`
-    );
+    logger.debug(`Prompt: ${prompt}`);
 
-    return this.askingService.ask(prompt);;
+    return this.askingService.ask(prompt);
   }
 
   private buildPrompt(question: string, context: string): string {
