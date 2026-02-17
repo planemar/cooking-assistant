@@ -3,6 +3,9 @@ import { logger } from '../../../utils/logger';
 import type { LLMEmbeddingService } from '../llm.interface';
 import type { GeminiModelSpecificConfig } from './gemini.service';
 
+const MAX_BATCH_SIZE = 100;
+const EMBEDDING_TIMEOUT_MS = 30000;
+
 type GeminiTaskType =
   | 'TASK_TYPE_UNSPECIFIED'
   | 'RETRIEVAL_QUERY'
@@ -34,14 +37,13 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
       throw new Error('modelName is required and cannot be empty');
     }
 
-    const genAI = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenAI({ apiKey, httpOptions: { timeout: EMBEDDING_TIMEOUT_MS } });
 
     logger.info('✓ Initialized Gemini embedding service');
 
     return new GeminiEmbeddingService(genAI, modelName);
   }
 
-  // TODO: max batch size is 100, need to split texts
   private async embedBatchWithTaskType(
     texts: string[],
     taskType: GeminiTaskType,
@@ -56,24 +58,33 @@ export class GeminiEmbeddingService implements LLMEmbeddingService {
       }
     }
 
-    const resp = await this.genAI.models.embedContent({
-      model: this.modelName,
-      contents: texts,
-      config: {
-        taskType,
-      },
-    });
+    const results: number[][] = [];
 
-    if (!resp.embeddings) {
-      throw new Error('No embeddings returned from Gemini API');
+    for (let i = 0; i < texts.length; i += MAX_BATCH_SIZE) {
+      const batch = texts.slice(i, i + MAX_BATCH_SIZE);
+
+      const resp = await this.genAI.models.embedContent({
+        model: this.modelName,
+        contents: batch,
+        config: {
+          taskType,
+        },
+      });
+
+      if (!resp.embeddings) {
+        throw new Error('No embeddings returned from Gemini API');
+      }
+
+      for (let j = 0; j < resp.embeddings.length; j++) {
+        const values = resp.embeddings[j].values;
+        if (!values) {
+          throw new Error('Embedding values are undefined');
+        }
+        results.push(values);
+      }
     }
 
-    return resp.embeddings.map((embedding) => {
-      if (!embedding.values) {
-        throw new Error('Embedding values are undefined');
-      }
-      return embedding.values;
-    });
+    return results;
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {

@@ -3,6 +3,8 @@ import { logger } from '../../../utils/logger';
 import type { LLMAskingService } from '../llm.interface';
 import type { GeminiModelSpecificConfig } from './gemini.service';
 
+const ASK_TIMEOUT_MS = 60000;
+
 export class GeminiAskingService implements LLMAskingService {
   private genAI: GoogleGenAI;
   private modelName: string;
@@ -23,7 +25,7 @@ export class GeminiAskingService implements LLMAskingService {
       throw new Error('modelName is required and cannot be empty');
     }
 
-    const genAI = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenAI({ apiKey, httpOptions: { timeout: ASK_TIMEOUT_MS } });
 
     logger.info('✓ Initialized Gemini asking service');
 
