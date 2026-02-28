@@ -1,36 +1,17 @@
-import { logger } from '../../utils/logger';
-import type { LLMAskingService, LLMEmbeddingService } from '../llm';
-import type { ParentChunkDocumentStore } from '../parent-chunk-store';
-import type { VectorDBService } from '../vector-db';
-import type { RAGService } from './rag.interface';
+import { logger } from '../../../utils/logger';
+import type { LLMEmbeddingService } from '../../llm';
+import type { ParentChunkDocumentStore } from '../../parent-chunk-store';
+import type { VectorDBService } from '../../vector-db';
+import type { RetrievedContext, RetrieverService } from './retriever.interface';
 
-const PROMPT_TEMPLATE = `You are a helpful cooking assistant that answers questions based on the provided recipes.
-
-Context from user's cookbook:
-{context}
-
-User question: {question}
-
-Instructions:
-- Answer the question using only the information provided in the context above
-- If the context doesn't contain enough information to answer the question, say so clearly
-- Be concise and accurate
-- Reference specific documents when applicable
-
-Answer:`;
-
-const NO_RESULTS_MESSAGE =
-  'I could not find any relevant information in the cookbook to answer your question.';
-
-export interface MyCustomRAGConfig {
+export interface MyCustomRetrieverConfig {
   nResults: number;
   minSimilarity: number;
 }
 
-export class MyCustomRAGService implements RAGService {
+export class MyCustomRetrieverService implements RetrieverService {
   private vectorDB: VectorDBService;
   private embeddingService: LLMEmbeddingService;
-  private askingService: LLMAskingService;
   private parentChunkStore: ParentChunkDocumentStore;
   private nResults: number;
   private minSimilarity: number;
@@ -38,14 +19,12 @@ export class MyCustomRAGService implements RAGService {
   private constructor(
     vectorDB: VectorDBService,
     embeddingService: LLMEmbeddingService,
-    askingService: LLMAskingService,
     parentChunkStore: ParentChunkDocumentStore,
     nResults: number,
     minSimilarity: number,
   ) {
     this.vectorDB = vectorDB;
     this.embeddingService = embeddingService;
-    this.askingService = askingService;
     this.parentChunkStore = parentChunkStore;
     this.nResults = nResults;
     this.minSimilarity = minSimilarity;
@@ -54,10 +33,9 @@ export class MyCustomRAGService implements RAGService {
   static create(
     vectorDB: VectorDBService,
     embeddingService: LLMEmbeddingService,
-    askingService: LLMAskingService,
     parentChunkStore: ParentChunkDocumentStore,
-    config: MyCustomRAGConfig,
-  ): MyCustomRAGService {
+    config: MyCustomRetrieverConfig,
+  ): MyCustomRetrieverService {
     const { nResults, minSimilarity } = config;
 
     if (nResults <= 0) {
@@ -68,19 +46,18 @@ export class MyCustomRAGService implements RAGService {
       throw new Error('minSimilarity must be between 0 and 1');
     }
 
-    logger.info('✓ Initialized RAG service with model');
+    logger.info('✓ Initialized Retriever service');
 
-    return new MyCustomRAGService(
+    return new MyCustomRetrieverService(
       vectorDB,
       embeddingService,
-      askingService,
       parentChunkStore,
       nResults,
       minSimilarity,
     );
   }
 
-  async ask(question: string): Promise<string> {
+  async retrieve(question: string): Promise<RetrievedContext> {
     if (!question || question.trim() === '') {
       throw new Error('question is required and cannot be empty');
     }
@@ -94,58 +71,48 @@ export class MyCustomRAGService implements RAGService {
     );
 
     if (childMatches.length === 0) {
-      return NO_RESULTS_MESSAGE;
+      return { entries: [] };
     }
 
     logger.debug(`Top child match similarity: ${childMatches[0].similarity}`);
-    logger.debug(
-      `Top child match doc substr(0, 30): ${childMatches[0].document.substring(0, 30)}`,
-    );
 
     const parentBestSimilarity = new Map<number, number>();
     for (let i = 0; i < childMatches.length; i++) {
       const child = childMatches[i];
       const parentId = child.metadata.parentId as number;
       const existing = parentBestSimilarity.get(parentId);
-      if (!existing || child.similarity > existing) {
+      if (existing === undefined || child.similarity > existing) {
         parentBestSimilarity.set(parentId, child.similarity);
       }
     }
 
     const parentIds = Array.from(parentBestSimilarity.keys());
     const parents = await this.parentChunkStore.getParents(parentIds);
+
     if (parents.length === 0) {
-      return NO_RESULTS_MESSAGE;
+      return { entries: [] };
     }
 
     logger.info(
       `Found ${childMatches.length} child matches from ${parents.length} unique parents`,
     );
 
-    const sortedParents = parents.sort((a, b) => {
+    parents.sort((a, b) => {
       const simA = parentBestSimilarity.get(a.id) ?? 0;
       const simB = parentBestSimilarity.get(b.id) ?? 0;
       return simB - simA;
     });
 
-    const context = sortedParents
-      .map((parent, i) => {
-        const sim = parentBestSimilarity.get(parent.id) ?? 0;
-        return `[Document ${i + 1}] (Best match: ${sim.toFixed(2)})\n${parent.content}`;
-      })
-      .join('\n\n');
+    const entries = [];
+    for (let i = 0; i < parents.length; i++) {
+      const parent = parents[i];
+      entries.push({
+        sourceFile: parent.sourceFile,
+        content: parent.content,
+        similarity: parentBestSimilarity.get(parent.id) ?? 0,
+      });
+    }
 
-    const prompt = this.buildPrompt(question, context);
-
-    logger.debug(`Prompt: ${prompt}`);
-
-    return this.askingService.ask(prompt);
-  }
-
-  private buildPrompt(question: string, context: string): string {
-    return PROMPT_TEMPLATE.replace('{context}', context).replace(
-      '{question}',
-      question,
-    );
+    return { entries };
   }
 }

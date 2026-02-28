@@ -1,8 +1,10 @@
 import express, { type Request, type Response } from 'express';
-import type { RAGService } from '../services/rag';
+import type { GeneratorService } from '../services/rag';
 import { logger } from '../utils/logger';
 
-export function createServer(ragService: RAGService): express.Application {
+export function createServer(
+  generatorService: GeneratorService,
+): express.Application {
   const app = express();
 
   app.use(express.json());
@@ -20,7 +22,7 @@ export function createServer(ragService: RAGService): express.Application {
 
       logger.info(`[Question] ${question}`);
 
-      const answer = await ragService.ask(question);
+      const answer = await generatorService.generate(question);
 
       logger.info(`[Answer] ${answer}`);
 
