@@ -6,7 +6,10 @@ import {
   GeminiEmbeddingService,
 } from './services/llm/gemini';
 import { SQLiteParentChunkStore } from './services/parent-chunk-store';
-import { MyCustomRAGService } from './services/rag';
+import {
+  MyCustomGeneratorService,
+  MyCustomRetrieverService,
+} from './services/rag';
 import { ChromaVectorDBService } from './services/vector-db';
 import { logger } from './utils/logger';
 
@@ -34,10 +37,9 @@ async function initializeServices() {
     dbPath: config.sqliteDbPath,
   });
 
-  const ragService = MyCustomRAGService.create(
+  const retrieverService = MyCustomRetrieverService.create(
     vectorDB,
     embeddingService,
-    askingService,
     parentChunkStore,
     {
       nResults: config.ragNResults,
@@ -45,16 +47,22 @@ async function initializeServices() {
     },
   );
 
+  const generatorService = MyCustomGeneratorService.create(
+    retrieverService,
+    askingService,
+  );
+
   logger.info('✓ All services initialized successfully');
 
-  return { ragService, parentChunkStore, port: config.port };
+  return { generatorService, parentChunkStore, port: config.port };
 }
 
 async function startServer() {
   try {
-    const { ragService, parentChunkStore, port } = await initializeServices();
+    const { generatorService, parentChunkStore, port } =
+      await initializeServices();
 
-    const app = createServer(ragService);
+    const app = createServer(generatorService);
 
     const server = app.listen(port, () => {
       logger.info(`✓ Server is running on http://localhost:${port}`);
