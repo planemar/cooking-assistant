@@ -1,81 +1,28 @@
 import 'dotenv/config';
 import { createServer } from './api/server.js';
-import { getConfig } from './config/index.js';
-import {
-  GeminiAskingService,
-  GeminiEmbeddingService,
-} from './services/llm/gemini/index.js';
-import { SQLiteParentChunkStore } from './services/parent-chunk-store/index.js';
-import {
-  MyCustomGeneratorService,
-  MyCustomRetrieverService,
-} from './services/rag/index.js';
-import { ChromaVectorDBService } from './services/vector-db/index.js';
+import { initializeServices } from './services/init.js';
 import { logger } from './utils/logger.js';
-
-async function initializeServices() {
-  logger.info('Initializing services...');
-
-  const config = getConfig();
-
-  const vectorDB = await ChromaVectorDBService.create({
-    collectionName: config.collectionName,
-    chromaUrl: config.chromaUrl,
-  });
-
-  const embeddingService = GeminiEmbeddingService.create({
-    apiKey: config.geminiApiKey,
-    modelName: config.geminiEmbeddingModel,
-  });
-
-  const askingService = GeminiAskingService.create({
-    apiKey: config.geminiApiKey,
-    modelName: config.geminiAskModel,
-  });
-
-  const parentChunkStore = SQLiteParentChunkStore.create({
-    dbPath: config.sqliteDbPath,
-  });
-
-  const retrieverService = MyCustomRetrieverService.create(
-    vectorDB,
-    embeddingService,
-    parentChunkStore,
-    {
-      nResults: config.ragNResults,
-      minSimilarity: config.ragMinSimilarity,
-    },
-  );
-
-  const generatorService = MyCustomGeneratorService.create(
-    retrieverService,
-    askingService,
-  );
-
-  logger.info('✓ All services initialized successfully');
-
-  return { generatorService, parentChunkStore, port: config.port };
-}
 
 async function startServer() {
   try {
-    const { generatorService, parentChunkStore, port } =
+    const { generatorService, retrieverService, parentChunkStore, port } =
       await initializeServices();
 
-    const app = createServer(generatorService);
+    const app = createServer(generatorService, retrieverService);
 
     const server = app.listen(port, () => {
-      logger.info(`✓ Server is running on http://localhost:${port}`);
-      logger.info(`  POST /chatbot/ask - Ask a question`);
-      logger.info(`  GET  /health      - Health check`);
+      logger.info(`Server is running on http://localhost:${port}`);
+      logger.info('  POST /chatbot/ask - Ask a question');
+      logger.info('  GET  /health      - Health check');
+      logger.info('  POST /mcp         - MCP Streamable HTTP');
     });
 
     const shutdown = () => {
       logger.info('Shutting down gracefully...');
       server.close(async () => {
-        logger.info('✓ HTTP server closed');
+        logger.info('HTTP server closed');
         await parentChunkStore.close();
-        logger.info('✓ Database connections closed');
+        logger.info('Database connections closed');
         process.exit(0);
       });
     };

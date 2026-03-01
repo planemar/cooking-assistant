@@ -1,9 +1,11 @@
 import express, { type Request, type Response } from 'express';
-import type { GeneratorService } from '../services/rag/index.js';
+import type { GeneratorService } from '../services/rag/generator/generator.interface.js';
+import type { RetrieverService } from '../services/rag/retriever/retriever.interface.js';
 import { logger } from '../utils/logger.js';
 
 export function createServer(
   generatorService: GeneratorService,
+  _retrieverService: RetrieverService,
 ): express.Application {
   const app = express();
 
