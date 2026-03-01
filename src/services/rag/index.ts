@@ -1,2 +1,2 @@
-export * from './generator';
-export * from './retriever';
+export * from './generator/index.js';
+export * from './retriever/index.js';

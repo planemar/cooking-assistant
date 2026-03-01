@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { LLMEmbeddingService } from '../../llm';
+import type { LLMEmbeddingService } from '../../llm/index.js';
 import type {
   ParentChunkDocument,
   ParentChunkDocumentStore,
-} from '../../parent-chunk-store';
-import type { QueryMatch, VectorDBService } from '../../vector-db';
-import { MyCustomRetrieverService } from './my-custom-retriever.service';
+} from '../../parent-chunk-store/index.js';
+import type { QueryMatch, VectorDBService } from '../../vector-db/index.js';
+import { MyCustomRetrieverService } from './my-custom-retriever.service.js';
 
 describe('MyCustomRetrieverService', () => {
   let vectorDB: VectorDBService;

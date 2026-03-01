@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { SQLiteParentChunkStore } from './sqlite-parent-chunk-store.service';
+import { SQLiteParentChunkStore } from './sqlite-parent-chunk-store.service.js';
 
 describe('SQLiteParentChunkStore', () => {
   let store: SQLiteParentChunkStore;

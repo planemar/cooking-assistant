@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ParagraphSentenceChunker } from '../../utils/text-chunker/paragraph-sentence-chunker';
-import type { TextChunker } from '../../utils/text-chunker/text-chunker.interface';
-import type { ParentChildChunkingConfig } from './parent-child-chunking.service';
-import { ParentChildChunkingService } from './parent-child-chunking.service';
+import { ParagraphSentenceChunker } from '../../utils/text-chunker/paragraph-sentence-chunker.js';
+import type { TextChunker } from '../../utils/text-chunker/text-chunker.interface.js';
+import type { ParentChildChunkingConfig } from './parent-child-chunking.service.js';
+import { ParentChildChunkingService } from './parent-child-chunking.service.js';
 
 describe('ParentChildChunkingService', () => {
   let textChunker: TextChunker;

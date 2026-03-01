@@ -1,6 +1,6 @@
 import express, { type Request, type Response } from 'express';
-import type { GeneratorService } from '../services/rag';
-import { logger } from '../utils/logger';
+import type { GeneratorService } from '../services/rag/index.js';
+import { logger } from '../utils/logger.js';
 
 export function createServer(
   generatorService: GeneratorService,

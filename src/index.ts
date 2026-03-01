@@ -1,17 +1,17 @@
 import 'dotenv/config';
-import { createServer } from './api/server';
-import { getConfig } from './config';
+import { createServer } from './api/server.js';
+import { getConfig } from './config/index.js';
 import {
   GeminiAskingService,
   GeminiEmbeddingService,
-} from './services/llm/gemini';
-import { SQLiteParentChunkStore } from './services/parent-chunk-store';
+} from './services/llm/gemini/index.js';
+import { SQLiteParentChunkStore } from './services/parent-chunk-store/index.js';
 import {
   MyCustomGeneratorService,
   MyCustomRetrieverService,
-} from './services/rag';
-import { ChromaVectorDBService } from './services/vector-db';
-import { logger } from './utils/logger';
+} from './services/rag/index.js';
+import { ChromaVectorDBService } from './services/vector-db/index.js';
+import { logger } from './utils/logger.js';
 
 async function initializeServices() {
   logger.info('Initializing services...');

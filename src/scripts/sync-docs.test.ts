@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   ParentChildChunkingService,
   ParentChunkResult,
-} from '../services/chunking/parent-child-chunking.service';
-import type { LLMEmbeddingService } from '../services/llm/llm.interface';
-import type { ParentChunkDocumentStore } from '../services/parent-chunk-store/parent-chunk-store.interface';
-import type { VectorDBService } from '../services/vector-db/vector-db.interface';
-import { syncDocumentsCore } from './sync-docs';
+} from '../services/chunking/parent-child-chunking.service.js';
+import type { LLMEmbeddingService } from '../services/llm/llm.interface.js';
+import type { ParentChunkDocumentStore } from '../services/parent-chunk-store/parent-chunk-store.interface.js';
+import type { VectorDBService } from '../services/vector-db/vector-db.interface.js';
+import { syncDocumentsCore } from './sync-docs.js';
 
 describe('syncDocumentsCore', () => {
   let mockVectorDB: VectorDBService;

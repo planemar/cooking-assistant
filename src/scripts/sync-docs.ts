@@ -2,16 +2,17 @@ import 'dotenv/config';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { getConfig } from '../config';
-import { ParentChildChunkingService } from '../services/chunking';
-import { GeminiEmbeddingService } from '../services/llm/gemini';
-import type { LLMEmbeddingService } from '../services/llm/llm.interface';
-import { SQLiteParentChunkStore } from '../services/parent-chunk-store';
-import type { ParentChunkDocumentStore } from '../services/parent-chunk-store/parent-chunk-store.interface';
-import { ChromaVectorDBService } from '../services/vector-db';
-import type { VectorDBService } from '../services/vector-db/vector-db.interface';
-import { logger } from '../utils/logger';
-import { ParagraphSentenceChunker } from '../utils/text-chunker/paragraph-sentence-chunker';
+import { fileURLToPath } from 'node:url';
+import { getConfig } from '../config/index.js';
+import { ParentChildChunkingService } from '../services/chunking/index.js';
+import { GeminiEmbeddingService } from '../services/llm/gemini/index.js';
+import type { LLMEmbeddingService } from '../services/llm/llm.interface.js';
+import { SQLiteParentChunkStore } from '../services/parent-chunk-store/index.js';
+import type { ParentChunkDocumentStore } from '../services/parent-chunk-store/parent-chunk-store.interface.js';
+import { ChromaVectorDBService } from '../services/vector-db/index.js';
+import type { VectorDBService } from '../services/vector-db/vector-db.interface.js';
+import { logger } from '../utils/logger.js';
+import { ParagraphSentenceChunker } from '../utils/text-chunker/paragraph-sentence-chunker.js';
 
 const HASH_ALGORITHM = 'sha256';
 
@@ -272,7 +273,9 @@ async function syncDocuments(reset: boolean = false): Promise<void> {
   }
 }
 
-if (require.main === module) {
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
   const args = process.argv.slice(2);
   const resetFlag = args.includes('--reset') || args.includes('-r');
 

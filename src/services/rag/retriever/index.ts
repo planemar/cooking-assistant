@@ -1,2 +1,2 @@
-export * from './my-custom-retriever.service';
-export * from './retriever.interface';
+export * from './my-custom-retriever.service.js';
+export * from './retriever.interface.js';

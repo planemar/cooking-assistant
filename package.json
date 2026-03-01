@@ -2,6 +2,7 @@
   "name": "cooking-assistant",
   "version": "1.0.0",
   "description": "A RAG chatbot for your personal recipe collection",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

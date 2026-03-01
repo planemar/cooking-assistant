@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ParagraphSentenceChunker } from './paragraph-sentence-chunker';
+import { ParagraphSentenceChunker } from './paragraph-sentence-chunker.js';
 
 describe('ParagraphSentenceChunker', () => {
   const chunker = new ParagraphSentenceChunker();
