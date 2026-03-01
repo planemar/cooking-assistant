@@ -8,6 +8,8 @@
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
+    "mcp": "tsx src/mcp-server.ts",
+    "mcp:start": "node dist/mcp-server.js",
     "sync-docs": "tsx src/scripts/sync-docs.ts",
     "test": "vitest run",
     "test:watch": "vitest",
