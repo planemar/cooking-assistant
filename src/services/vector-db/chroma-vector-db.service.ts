@@ -1,12 +1,12 @@
 import { ChromaClient, type Collection } from 'chromadb';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/logger.js';
 import type {
   DocumentInfo,
   QueryMatch,
   StoredDocument,
   VectorDBService,
   VectorDocument,
-} from './vector-db.interface';
+} from './vector-db.interface.js';
 
 export interface ChromaDBConfig {
   chromaUrl: string;

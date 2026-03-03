@@ -1,4 +1,4 @@
-import type { TextChunker } from './text-chunker.interface';
+import type { TextChunker } from './text-chunker.interface.js';
 
 const PARAGRAPH_SEPARATOR = '\n\n';
 const PARAGRAPH_SPLIT_REGEX = new RegExp(`${PARAGRAPH_SEPARATOR}+`);

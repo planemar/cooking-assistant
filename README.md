@@ -8,6 +8,7 @@ Powered by Google Gemini for embeddings and answer generation, ChromaDB for vect
 
 - **Parent-child chunking** - Documents are split into parent chunks (stored in SQLite) and smaller child chunks (embedded and stored in ChromaDB). Queries match against precise child chunks, then retrieve full parent context for richer answers.
 - **Incremental sync** - Only new or modified files are re-processed. Deleted files are cleaned up automatically from both stores.
+- **MCP server** - Exposes `ask_recipe` and `search_recipes` tools via the Model Context Protocol, supporting both stdio transport and Streamable HTTP transport (`POST /mcp`).
 
 ## Prerequisites
 
@@ -71,7 +72,34 @@ npm run sync-docs -- --reset   # Full reset and re-sync from scratch
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/chatbot/ask` | POST | Takes `{ "question": "..." }`, returns `{ "question", "answer" }` |
+| `/mcp` | POST | MCP Streamable HTTP endpoint (stateless, JSON-RPC) |
 | `/health` | GET | Health check |
+
+## MCP Server
+
+The assistant is also available as an [MCP](https://modelcontextprotocol.io/) server, exposing two tools:
+
+| Tool | Description |
+|------|-------------|
+| `ask_recipe` | Ask a cooking question — runs full RAG pipeline (retrieve + generate) and returns the answer |
+| `search_recipes` | Search recipes — runs retrieval only and returns matching entries with source file, similarity score, and content |
+
+### Stdio transport (local MCP clients)
+
+For local MCP clients that communicate over stdin/stdout:
+
+```bash
+npm run mcp             # Dev mode (tsx)
+npm run mcp:start       # Production (compiled)
+```
+
+### HTTP transport (remote MCP clients)
+
+Start the server normally (`npm run dev` or `npm start`) and point your MCP client to:
+
+```
+http://localhost:3000/mcp
+```
 
 ## Development
 
@@ -82,6 +110,8 @@ npm test             # Run tests
 npm run test:watch   # Run tests in watch mode
 npm run check        # Lint with Biome
 npm run check:fix    # Lint and auto-fix
+npm run mcp          # MCP stdio server (dev mode)
+npm run mcp:start    # MCP stdio server (production)
 ```
 
 ## Configuration

@@ -8,6 +8,7 @@ enum LogLevel {
 class Logger {
   private static instance: Logger;
   private logLevel: LogLevel;
+  private stderrMode = false;
 
   private constructor() {
     const level = process.env.LOG_LEVEL?.toUpperCase();
@@ -43,6 +44,10 @@ class Logger {
     return Logger.instance;
   }
 
+  useStderr(): void {
+    this.stderrMode = true;
+  }
+
   private formatMessage(level: string, message: string): string {
     const timestamp = new Date().toISOString();
     return `[${timestamp}] [${level}] ${message}`;
@@ -53,20 +58,32 @@ class Logger {
   }
 
   debug(message: string): void {
-    if (this.shouldLog(LogLevel.DEBUG)) {
-      console.debug(this.formatMessage('DEBUG', message));
+    if (!this.shouldLog(LogLevel.DEBUG)) return;
+    const formatted = this.formatMessage('DEBUG', message);
+    if (this.stderrMode) {
+      console.error(formatted);
+    } else {
+      console.debug(formatted);
     }
   }
 
   info(message: string): void {
-    if (this.shouldLog(LogLevel.INFO)) {
-      console.info(this.formatMessage('INFO', message));
+    if (!this.shouldLog(LogLevel.INFO)) return;
+    const formatted = this.formatMessage('INFO', message);
+    if (this.stderrMode) {
+      console.error(formatted);
+    } else {
+      console.info(formatted);
     }
   }
 
   warn(message: string): void {
-    if (this.shouldLog(LogLevel.WARN)) {
-      console.warn(this.formatMessage('WARN', message));
+    if (!this.shouldLog(LogLevel.WARN)) return;
+    const formatted = this.formatMessage('WARN', message);
+    if (this.stderrMode) {
+      console.error(formatted);
+    } else {
+      console.warn(formatted);
     }
   }
 

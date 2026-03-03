@@ -1,9 +1,9 @@
 import Database from 'better-sqlite3';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/logger.js';
 import type {
   ParentChunkDocument,
   ParentChunkDocumentStore,
-} from './parent-chunk-store.interface';
+} from './parent-chunk-store.interface.js';
 
 export interface SQLiteParentChunkStoreConfig {
   dbPath: string; // File path or ':memory:' for in-memory DB
