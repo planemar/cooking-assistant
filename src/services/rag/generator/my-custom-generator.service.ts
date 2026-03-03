@@ -1,7 +1,7 @@
-import { logger } from '../../../utils/logger';
-import type { LLMAskingService } from '../../llm';
-import type { RetrieverService } from '../retriever';
-import type { GeneratorService } from './generator.interface';
+import { logger } from '../../../utils/logger.js';
+import type { LLMAskingService } from '../../llm/index.js';
+import type { RetrieverService } from '../retriever/index.js';
+import type { GeneratorService } from './generator.interface.js';
 
 function buildPrompt(question: string, context: string): string {
   return `You are a helpful cooking assistant that answers questions based on the provided recipes.

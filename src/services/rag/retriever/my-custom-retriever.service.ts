@@ -1,8 +1,11 @@
-import { logger } from '../../../utils/logger';
-import type { LLMEmbeddingService } from '../../llm';
-import type { ParentChunkDocumentStore } from '../../parent-chunk-store';
-import type { VectorDBService } from '../../vector-db';
-import type { RetrievedContext, RetrieverService } from './retriever.interface';
+import { logger } from '../../../utils/logger.js';
+import type { LLMEmbeddingService } from '../../llm/index.js';
+import type { ParentChunkDocumentStore } from '../../parent-chunk-store/index.js';
+import type { VectorDBService } from '../../vector-db/index.js';
+import type {
+  RetrievedContext,
+  RetrieverService,
+} from './retriever.interface.js';
 
 export interface MyCustomRetrieverConfig {
   nResults: number;

@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import { logger } from '../../../utils/logger';
-import type { LLMEmbeddingService } from '../llm.interface';
-import type { GeminiModelSpecificConfig } from './gemini.service';
+import { logger } from '../../../utils/logger.js';
+import type { LLMEmbeddingService } from '../llm.interface.js';
+import type { GeminiModelSpecificConfig } from './gemini.service.js';
 
 const MAX_BATCH_SIZE = 100;
 const EMBEDDING_TIMEOUT_MS = 30000;

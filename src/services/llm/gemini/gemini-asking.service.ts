@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import { logger } from '../../../utils/logger';
-import type { LLMAskingService } from '../llm.interface';
-import type { GeminiModelSpecificConfig } from './gemini.service';
+import { logger } from '../../../utils/logger.js';
+import type { LLMAskingService } from '../llm.interface.js';
+import type { GeminiModelSpecificConfig } from './gemini.service.js';
 
 const ASK_TIMEOUT_MS = 60000;
 

@@ -1,4 +1,4 @@
-import type { TextChunker } from '../../utils/text-chunker/text-chunker.interface';
+import type { TextChunker } from '../../utils/text-chunker/text-chunker.interface.js';
 
 export interface ParentChunkResult {
   text: string;

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger.js';
 
 const configSchema = z.object({
   port: z.coerce.number().int().positive().describe('Server port'),

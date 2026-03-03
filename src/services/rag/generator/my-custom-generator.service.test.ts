@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { LLMAskingService } from '../../llm';
-import type { RetrieverService } from '../retriever';
-import { MyCustomGeneratorService } from './my-custom-generator.service';
+import type { LLMAskingService } from '../../llm/index.js';
+import type { RetrieverService } from '../retriever/index.js';
+import { MyCustomGeneratorService } from './my-custom-generator.service.js';
 
 describe('MyCustomGeneratorService', () => {
   let retrieverService: RetrieverService;
